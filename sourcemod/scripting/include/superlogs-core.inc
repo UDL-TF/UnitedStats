@@ -1,7 +1,7 @@
 /**
- * SuperLogs Core - UDP Event Sender Library
+ * SuperLogs Core - JSON Event Sender via UDP
  * 
- * Provides shared functionality for sending game events via UDP to the collector.
+ * Based on TFDB logging pattern but sends JSON events via UDP instead of writing to files.
  * 
  * Usage:
  *   #include <superlogs-core>
@@ -10,7 +10,15 @@
  *       SuperLogs_Initialize("default", "stats.udl.tf", 27500);
  *   }
  *   
- *   SuperLogs_SendKill(killerClient, victimClient, weapon, crit, airborne);
+ *   // Send a kill event
+ *   LogEvent()
+ *       .WithEventType("kill")
+ *       .WithPlayer("killer", killerClient)
+ *       .WithPlayer("victim", victimClient)
+ *       .WithString("weapon", weapon)
+ *       .WithBool("crit", crit)
+ *       .WithBool("airborne", airborne)
+ *       .Send();
  */
 
 #if defined _superlogs_core_included
@@ -18,9 +26,11 @@
 #endif
 #define _superlogs_core_included
 
+#include <sourcemod>
+#include <json>
+
 // Configuration
-#define SUPERLOGS_MAX_LINE_LENGTH 512
-#define SUPERLOGS_VERSION "1.0.0"
+#define SUPERLOGS_VERSION "2.0.0"
 
 // Global state
 char g_sGamemode[32];
@@ -44,65 +54,7 @@ stock void SuperLogs_Initialize(const char[] gamemode, const char[] host, int po
 }
 
 /**
- * Send raw log line via UDP
- * 
- * @param line         Formatted log line to send
- */
-stock void SuperLogs_SendRaw(const char[] line) {
-    // Create socket if needed
-    if (g_hSocket == INVALID_HANDLE) {
-        g_hSocket = SocketCreate(SOCKET_UDP, OnSocketError);
-    }
-    
-    // Send UDP packet
-    SocketSetOption(g_hSocket, SocketReuseAddr, 1);
-    SocketSendTo(g_hSocket, line, strlen(line), g_sCollectorHost, g_iCollectorPort);
-    
-    #if defined DEBUG
-    LogMessage("[SuperLogs] Sent: %s", line);
-    #endif
-}
-
-/**
- * Escape special characters in strings (pipes, newlines, etc.)
- * 
- * @param input        Input string
- * @param output       Output buffer
- * @param maxlen       Max length of output buffer
- */
-stock void SuperLogs_EscapeString(const char[] input, char[] output, int maxlen) {
-    int outPos = 0;
-    int len = strlen(input);
-    
-    for (int i = 0; i < len && outPos < maxlen - 2; i++) {
-        char c = input[i];
-        
-        // Escape special characters
-        if (c == '|') {
-            output[outPos++] = '\\';
-            output[outPos++] = 'p';
-        } else if (c == '\n') {
-            output[outPos++] = '\\';
-            output[outPos++] = 'n';
-        } else if (c == '\r') {
-            output[outPos++] = '\\';
-            output[outPos++] = 'r';
-        } else if (c == '\\') {
-            output[outPos++] = '\\';
-            output[outPos++] = '\\';
-        } else {
-            output[outPos++] = c;
-        }
-    }
-    
-    output[outPos] = '\0';
-}
-
-/**
  * Get current server IP address
- * 
- * @param buffer       Output buffer for IP address
- * @param maxlen       Max length of buffer
  */
 stock void SuperLogs_GetServerIP(char[] buffer, int maxlen) {
     int pieces[4];
@@ -117,150 +69,25 @@ stock void SuperLogs_GetServerIP(char[] buffer, int maxlen) {
 }
 
 /**
- * Get current Unix timestamp
- * 
- * @return Unix timestamp (seconds since epoch)
+ * Send JSON event via UDP
  */
-stock int SuperLogs_GetTimestamp() {
-    return GetTime();
-}
-
-/**
- * Send KILL event
- * 
- * Format: KILL|timestamp|gamemode|server_ip|killer_steamid|killer_name|victim_steamid|victim_name|weapon|crit|airborne
- * 
- * @param killerClient   Client index of killer
- * @param victimClient   Client index of victim
- * @param weapon         Weapon name
- * @param crit           Was critical hit (0/1)
- * @param airborne       Was victim airborne (0/1)
- */
-stock void SuperLogs_SendKill(int killerClient, int victimClient, const char[] weapon, int crit, int airborne) {
-    char line[SUPERLOGS_MAX_LINE_LENGTH];
-    char serverIP[32];
-    char killerSteam[32], victimSteam[32];
-    char killerName[64], victimName[64];
-    char killerNameEsc[128], victimNameEsc[128];
-    char weaponEsc[64];
+stock void SuperLogs_SendJSON(JSON_Object event) {
+    // Create socket if needed
+    if (g_hSocket == INVALID_HANDLE) {
+        g_hSocket = SocketCreate(SOCKET_UDP, OnSocketError);
+    }
     
-    // Get server IP
-    SuperLogs_GetServerIP(serverIP, sizeof(serverIP));
+    // Encode to JSON string
+    char buffer[4096];
+    event.Encode(buffer, sizeof(buffer));
     
-    // Get SteamIDs
-    GetClientAuthId(killerClient, AuthId_SteamID64, killerSteam, sizeof(killerSteam));
-    GetClientAuthId(victimClient, AuthId_SteamID64, victimSteam, sizeof(victimSteam));
+    // Send UDP packet
+    SocketSetOption(g_hSocket, SocketReuseAddr, 1);
+    SocketSendTo(g_hSocket, buffer, strlen(buffer), g_sCollectorHost, g_iCollectorPort);
     
-    // Get player names and escape
-    GetClientName(killerClient, killerName, sizeof(killerName));
-    GetClientName(victimClient, victimName, sizeof(victimName));
-    SuperLogs_EscapeString(killerName, killerNameEsc, sizeof(killerNameEsc));
-    SuperLogs_EscapeString(victimName, victimNameEsc, sizeof(victimNameEsc));
-    SuperLogs_EscapeString(weapon, weaponEsc, sizeof(weaponEsc));
-    
-    // Format log line
-    Format(line, sizeof(line), "KILL|%d|%s|%s|%s|%s|%s|%s|%s|%d|%d",
-        SuperLogs_GetTimestamp(),
-        g_sGamemode,
-        serverIP,
-        killerSteam,
-        killerNameEsc,
-        victimSteam,
-        victimNameEsc,
-        weaponEsc,
-        crit,
-        airborne
-    );
-    
-    SuperLogs_SendRaw(line);
-}
-
-/**
- * Send DEFLECT event (for dodgeball)
- * 
- * Format: DEFLECT|timestamp|gamemode|server_ip|player_steamid|player_name|rocket_speed|deflect_angle|timing_ms|distance
- * 
- * @param client         Client index
- * @param rocketSpeed    Rocket speed at deflect (units/sec)
- * @param angle          Deflect angle accuracy (0.0-1.0)
- * @param timing         Timing in milliseconds
- * @param distance       Distance from rocket
- */
-stock void SuperLogs_SendDeflect(int client, float rocketSpeed, float angle, int timing, float distance) {
-    char line[SUPERLOGS_MAX_LINE_LENGTH];
-    char serverIP[32];
-    char steamID[32];
-    char playerName[64];
-    char playerNameEsc[128];
-    
-    SuperLogs_GetServerIP(serverIP, sizeof(serverIP));
-    GetClientAuthId(client, AuthId_SteamID64, steamID, sizeof(steamID));
-    GetClientName(client, playerName, sizeof(playerName));
-    SuperLogs_EscapeString(playerName, playerNameEsc, sizeof(playerNameEsc));
-    
-    Format(line, sizeof(line), "DEFLECT|%d|%s|%s|%s|%s|%.2f|%.4f|%d|%.2f",
-        SuperLogs_GetTimestamp(),
-        g_sGamemode,
-        serverIP,
-        steamID,
-        playerNameEsc,
-        rocketSpeed,
-        angle,
-        timing,
-        distance
-    );
-    
-    SuperLogs_SendRaw(line);
-}
-
-/**
- * Send MATCH_START event
- * 
- * Format: MATCH_START|timestamp|gamemode|server_ip|map_name
- * 
- * @param mapName        Current map name
- */
-stock void SuperLogs_SendMatchStart(const char[] mapName) {
-    char line[SUPERLOGS_MAX_LINE_LENGTH];
-    char serverIP[32];
-    char mapEsc[128];
-    
-    SuperLogs_GetServerIP(serverIP, sizeof(serverIP));
-    SuperLogs_EscapeString(mapName, mapEsc, sizeof(mapEsc));
-    
-    Format(line, sizeof(line), "MATCH_START|%d|%s|%s|%s",
-        SuperLogs_GetTimestamp(),
-        g_sGamemode,
-        serverIP,
-        mapEsc
-    );
-    
-    SuperLogs_SendRaw(line);
-}
-
-/**
- * Send MATCH_END event
- * 
- * Format: MATCH_END|timestamp|gamemode|server_ip|winner_team|duration
- * 
- * @param winnerTeam     Winning team (2=RED, 3=BLU, 0=tie)
- * @param duration       Match duration in seconds
- */
-stock void SuperLogs_SendMatchEnd(int winnerTeam, int duration) {
-    char line[SUPERLOGS_MAX_LINE_LENGTH];
-    char serverIP[32];
-    
-    SuperLogs_GetServerIP(serverIP, sizeof(serverIP));
-    
-    Format(line, sizeof(line), "MATCH_END|%d|%s|%s|%d|%d",
-        SuperLogs_GetTimestamp(),
-        g_sGamemode,
-        serverIP,
-        winnerTeam,
-        duration
-    );
-    
-    SuperLogs_SendRaw(line);
+    #if defined DEBUG
+    LogMessage("[SuperLogs] Sent: %s", buffer);
+    #endif
 }
 
 /**
@@ -271,4 +98,169 @@ public int OnSocketError(Handle socket, const int errorType, const int errorNum,
     CloseHandle(socket);
     g_hSocket = INVALID_HANDLE;
     return 0;
+}
+
+/**
+ * LogEvent methodmap - builds structured JSON events
+ */
+methodmap LogEvent < JSON_Object {
+    /**
+     * Creates a new LogEvent
+     */
+    public LogEvent() {
+        LogEvent event = view_as<LogEvent>(new JSON_Object());
+        
+        // Add timestamp
+        char timeStr[64];
+        FormatTime(timeStr, sizeof(timeStr), "%Y-%m-%dT%H:%M:%S", GetTime());
+        event.SetString("timestamp", timeStr);
+        
+        // Add gamemode
+        event.SetString("gamemode", g_sGamemode);
+        
+        // Add server IP
+        char serverIP[32];
+        SuperLogs_GetServerIP(serverIP, sizeof(serverIP));
+        event.SetString("server_ip", serverIP);
+        
+        return event;
+    }
+    
+    /**
+     * Sets the event type (e.g., "kill", "deflect", "match_start")
+     */
+    public LogEvent WithEventType(const char[] eventType) {
+        this.SetString("event_type", eventType);
+        return this;
+    }
+    
+    /**
+     * Adds a string value
+     */
+    public LogEvent WithString(const char[] key, const char[] value) {
+        this.SetString(key, value);
+        return this;
+    }
+    
+    /**
+     * Adds an integer value
+     */
+    public LogEvent WithInt(const char[] key, int value) {
+        this.SetInt(key, value);
+        return this;
+    }
+    
+    /**
+     * Adds a float value
+     */
+    public LogEvent WithFloat(const char[] key, float value) {
+        this.SetFloat(key, value);
+        return this;
+    }
+    
+    /**
+     * Adds a boolean value
+     */
+    public LogEvent WithBool(const char[] key, bool value) {
+        this.SetBool(key, value);
+        return this;
+    }
+    
+    /**
+     * Adds player information (SteamID + name) as a nested object
+     * 
+     * @param role         Player role ("killer", "victim", "player")
+     * @param client       Client index
+     */
+    public LogEvent WithPlayer(const char[] role, int client) {
+        if (!IsValidClient(client)) {
+            return this;
+        }
+        
+        JSON_Object playerObj = new JSON_Object();
+        
+        // Get SteamID
+        char steamID[32];
+        GetClientAuthId(client, AuthId_SteamID64, steamID, sizeof(steamID));
+        playerObj.SetString("steam_id", steamID);
+        
+        // Get player name
+        char playerName[64];
+        GetClientName(client, playerName, sizeof(playerName));
+        playerObj.SetString("name", playerName);
+        
+        // Get team
+        int team = GetClientTeam(client);
+        playerObj.SetInt("team", team);
+        
+        // Attach to event
+        this.SetObject(role, playerObj);
+        
+        return this;
+    }
+    
+    /**
+     * Adds player position (x, y, z) as a nested object
+     */
+    public LogEvent WithPlayerPosition(const char[] key, int client) {
+        if (!IsValidClient(client)) {
+            return this;
+        }
+        
+        float pos[3];
+        GetClientAbsOrigin(client, pos);
+        
+        JSON_Object posObj = new JSON_Object();
+        posObj.SetFloat("x", pos[0]);
+        posObj.SetFloat("y", pos[1]);
+        posObj.SetFloat("z", pos[2]);
+        
+        this.SetObject(key, posObj);
+        
+        return this;
+    }
+    
+    /**
+     * Adds weapon information as a nested object
+     */
+    public LogEvent WithWeapon(const char[] weapon, int itemDefIndex = -1) {
+        JSON_Object weaponObj = new JSON_Object();
+        weaponObj.SetString("name", weapon);
+        
+        if (itemDefIndex != -1) {
+            weaponObj.SetInt("item_def_index", itemDefIndex);
+        }
+        
+        this.SetObject("weapon", weaponObj);
+        
+        return this;
+    }
+    
+    /**
+     * Sends the event via UDP and cleans up
+     */
+    public void Send() {
+        SuperLogs_SendJSON(this);
+        
+        // Cleanup
+        json_cleanup_and_delete(this);
+    }
+}
+
+/**
+ * Helper: Check if client is valid player
+ */
+stock bool IsValidClient(int client) {
+    return (client > 0 && 
+            client <= MaxClients && 
+            IsClientInGame(client) && 
+            !IsFakeClient(client));
+}
+
+/**
+ * Starts a new event
+ * Usage: LogEvent().WithEventType("kill").WithPlayer("killer", client).Send();
+ */
+stock LogEvent LogEvent() {
+    return new LogEvent();
 }

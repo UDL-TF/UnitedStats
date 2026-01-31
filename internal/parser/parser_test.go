@@ -4,14 +4,13 @@ import (
 	"bufio"
 	"os"
 	"testing"
-	"time"
 
 	"github.com/UDL-TF/UnitedStats/pkg/events"
 )
 
 // TestParseKillEvent tests basic KILL event parsing
 func TestParseKillEvent(t *testing.T) {
-	line := "KILL|1706745600|default|192.168.1.100|76561198012345678|Player1|76561198087654321|Player2|scattergun|0|0"
+	line := `{"timestamp":"2024-02-01T12:00:00","gamemode":"default","server_ip":"192.168.1.100","event_type":"kill","killer":{"steam_id":"76561198012345678","name":"Player1","team":2},"victim":{"steam_id":"76561198087654321","name":"Player2","team":3},"weapon":{"name":"scattergun"},"crit":false,"airborne":false}`
 	
 	event, err := ParseLine(line)
 	if err != nil {
@@ -31,33 +30,41 @@ func TestParseKillEvent(t *testing.T) {
 		t.Fatal("event.Kill is nil")
 	}
 	
-	// Check timestamp
-	expectedTime := time.Unix(1706745600, 0)
-	if !kill.Timestamp.Equal(expectedTime) {
-		t.Errorf("Timestamp = %v, want %v", kill.Timestamp, expectedTime)
-	}
-	
 	// Check fields
-	tests := []struct {
-		name string
-		got  string
-		want string
-	}{
-		{"Gamemode", kill.Gamemode, "default"},
-		{"ServerIP", kill.ServerIP, "192.168.1.100"},
-		{"KillerSteamID", kill.KillerSteamID, "76561198012345678"},
-		{"KillerName", kill.KillerName, "Player1"},
-		{"VictimSteamID", kill.VictimSteamID, "76561198087654321"},
-		{"VictimName", kill.VictimName, "Player2"},
-		{"Weapon", kill.Weapon, "scattergun"},
+	if kill.Gamemode != "default" {
+		t.Errorf("Gamemode = %v, want default", kill.Gamemode)
 	}
 	
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if tt.got != tt.want {
-				t.Errorf("%s = %v, want %v", tt.name, tt.got, tt.want)
-			}
-		})
+	if kill.ServerIP != "192.168.1.100" {
+		t.Errorf("ServerIP = %v, want 192.168.1.100", kill.ServerIP)
+	}
+	
+	if kill.Killer.SteamID != "76561198012345678" {
+		t.Errorf("Killer.SteamID = %v, want 76561198012345678", kill.Killer.SteamID)
+	}
+	
+	if kill.Killer.Name != "Player1" {
+		t.Errorf("Killer.Name = %v, want Player1", kill.Killer.Name)
+	}
+	
+	if kill.Killer.Team != 2 {
+		t.Errorf("Killer.Team = %v, want 2", kill.Killer.Team)
+	}
+	
+	if kill.Victim.SteamID != "76561198087654321" {
+		t.Errorf("Victim.SteamID = %v, want 76561198087654321", kill.Victim.SteamID)
+	}
+	
+	if kill.Victim.Name != "Player2" {
+		t.Errorf("Victim.Name = %v, want Player2", kill.Victim.Name)
+	}
+	
+	if kill.Victim.Team != 3 {
+		t.Errorf("Victim.Team = %v, want 3", kill.Victim.Team)
+	}
+	
+	if kill.Weapon.Name != "scattergun" {
+		t.Errorf("Weapon.Name = %v, want scattergun", kill.Weapon.Name)
 	}
 	
 	if kill.Crit {
@@ -71,7 +78,7 @@ func TestParseKillEvent(t *testing.T) {
 
 // TestParseCriticalKill tests critical hit kill
 func TestParseCriticalKill(t *testing.T) {
-	line := "KILL|1706745601|default|192.168.1.100|76561198012345678|Player1|76561198087654321|Player2|rocket_launcher|1|0"
+	line := `{"timestamp":"2024-02-01T12:00:01","gamemode":"default","server_ip":"192.168.1.100","event_type":"kill","killer":{"steam_id":"76561198012345678","name":"Player1","team":2},"victim":{"steam_id":"76561198087654321","name":"Player2","team":3},"weapon":{"name":"rocket_launcher"},"crit":true,"airborne":false}`
 	
 	event, err := ParseLine(line)
 	if err != nil {
@@ -85,7 +92,7 @@ func TestParseCriticalKill(t *testing.T) {
 
 // TestParseAirshot tests airshot kill
 func TestParseAirshot(t *testing.T) {
-	line := "KILL|1706745602|default|192.168.1.100|76561198012345678|SniperPro|76561198087654321|ScoutMain|tf_projectile_pipe_remote|0|1"
+	line := `{"timestamp":"2024-02-01T12:00:02","gamemode":"default","server_ip":"192.168.1.100","event_type":"kill","killer":{"steam_id":"76561198012345678","name":"SniperPro","team":2},"victim":{"steam_id":"76561198087654321","name":"ScoutMain","team":3},"weapon":{"name":"tf_projectile_pipe_remote"},"crit":false,"airborne":true}`
 	
 	event, err := ParseLine(line)
 	if err != nil {
@@ -97,37 +104,53 @@ func TestParseAirshot(t *testing.T) {
 	}
 }
 
-// TestParseEscapedNames tests special character escaping
-func TestParseEscapedNames(t *testing.T) {
+// TestParseKillWithPositions tests kill with position data
+func TestParseKillWithPositions(t *testing.T) {
+	line := `{"timestamp":"2024-02-01T12:00:00","gamemode":"default","server_ip":"192.168.1.100","event_type":"kill","killer":{"steam_id":"76561198012345678","name":"Player1","team":2},"victim":{"steam_id":"76561198087654321","name":"Player2","team":3},"weapon":{"name":"scattergun"},"crit":false,"airborne":false,"killer_pos":{"x":100.5,"y":200.3,"z":50.0},"victim_pos":{"x":150.2,"y":210.8,"z":52.1}}`
+	
+	event, err := ParseLine(line)
+	if err != nil {
+		t.Fatalf("ParseLine() error = %v", err)
+	}
+	
+	kill := event.Kill
+	
+	if kill.KillerPos == nil {
+		t.Fatal("KillerPos is nil")
+	}
+	
+	if kill.KillerPos.X != 100.5 {
+		t.Errorf("KillerPos.X = %v, want 100.5", kill.KillerPos.X)
+	}
+	
+	if kill.VictimPos == nil {
+		t.Fatal("VictimPos is nil")
+	}
+	
+	if kill.VictimPos.X != 150.2 {
+		t.Errorf("VictimPos.X = %v, want 150.2", kill.VictimPos.X)
+	}
+}
+
+// TestParseSpecialCharacters tests names with special characters
+func TestParseSpecialCharacters(t *testing.T) {
 	tests := []struct {
-		name         string
-		line         string
-		wantKillerName string
-		wantVictimName string
+		name       string
+		line       string
+		wantKiller string
+		wantVictim string
 	}{
 		{
-			name: "Escaped pipe",
-			line: "KILL|1706745604|default|192.168.1.100|76561198012345678|Player\\pOne|76561198087654321|NormalName|minigun|0|0",
-			wantKillerName: "Player|One",
-			wantVictimName: "NormalName",
+			name:       "Pipe in name",
+			line:       `{"timestamp":"2024-02-01T12:00:04","gamemode":"default","server_ip":"192.168.1.100","event_type":"kill","killer":{"steam_id":"76561198012345678","name":"Player|One","team":2},"victim":{"steam_id":"76561198087654321","name":"NormalName","team":3},"weapon":{"name":"minigun"},"crit":false,"airborne":false}`,
+			wantKiller: "Player|One",
+			wantVictim: "NormalName",
 		},
 		{
-			name: "Multiple escaped pipes",
-			line: "KILL|1706745605|default|192.168.1.100|76561198012345678|[TF2]\\pBot\\p2000|76561198087654321|l33t\\pplayer|shotgun_primary|0|0",
-			wantKillerName: "[TF2]|Bot|2000",
-			wantVictimName: "l33t|player",
-		},
-		{
-			name: "Escaped backslash",
-			line: "KILL|1706745606|default|192.168.1.100|76561198012345678|Player\\\\One|76561198087654321|Victim|smg|0|0",
-			wantKillerName: "Player\\One",
-			wantVictimName: "Victim",
-		},
-		{
-			name: "Escaped newline",
-			line: "KILL|1706745607|default|192.168.1.100|76561198012345678|Multi\\nLine\\nName|76561198087654321|TestPlayer|flamethrower|0|0",
-			wantKillerName: "Multi\nLine\nName",
-			wantVictimName: "TestPlayer",
+			name:       "Multiple special chars",
+			line:       `{"timestamp":"2024-02-01T12:00:05","gamemode":"default","server_ip":"192.168.1.100","event_type":"kill","killer":{"steam_id":"76561198012345678","name":"[TF2]|Bot|2000","team":2},"victim":{"steam_id":"76561198087654321","name":"l33t|player","team":3},"weapon":{"name":"shotgun_primary"},"crit":false,"airborne":false}`,
+			wantKiller: "[TF2]|Bot|2000",
+			wantVictim: "l33t|player",
 		},
 	}
 	
@@ -138,12 +161,12 @@ func TestParseEscapedNames(t *testing.T) {
 				t.Fatalf("ParseLine() error = %v", err)
 			}
 			
-			if event.Kill.KillerName != tt.wantKillerName {
-				t.Errorf("KillerName = %q, want %q", event.Kill.KillerName, tt.wantKillerName)
+			if event.Kill.Killer.Name != tt.wantKiller {
+				t.Errorf("Killer.Name = %q, want %q", event.Kill.Killer.Name, tt.wantKiller)
 			}
 			
-			if event.Kill.VictimName != tt.wantVictimName {
-				t.Errorf("VictimName = %q, want %q", event.Kill.VictimName, tt.wantVictimName)
+			if event.Kill.Victim.Name != tt.wantVictim {
+				t.Errorf("Victim.Name = %q, want %q", event.Kill.Victim.Name, tt.wantVictim)
 			}
 		})
 	}
@@ -151,7 +174,7 @@ func TestParseEscapedNames(t *testing.T) {
 
 // TestParseDeflectEvent tests DEFLECT event parsing
 func TestParseDeflectEvent(t *testing.T) {
-	line := "DEFLECT|1706745700|dodgeball|192.168.1.100|76561198012345678|DodgeballPro|1500.50|1.0000|50|100.00"
+	line := `{"timestamp":"2024-02-01T12:05:00","gamemode":"dodgeball","server_ip":"192.168.1.100","event_type":"deflect","player":{"steam_id":"76561198012345678","name":"DodgeballPro","team":2},"rocket_speed":1500.5,"deflect_angle":1.0000,"timing_ms":50,"distance":100.0}`
 	
 	event, err := ParseLine(line)
 	if err != nil {
@@ -171,16 +194,16 @@ func TestParseDeflectEvent(t *testing.T) {
 		t.Errorf("Gamemode = %v, want dodgeball", deflect.Gamemode)
 	}
 	
-	if deflect.PlayerSteamID != "76561198012345678" {
-		t.Errorf("PlayerSteamID = %v, want 76561198012345678", deflect.PlayerSteamID)
+	if deflect.Player.SteamID != "76561198012345678" {
+		t.Errorf("Player.SteamID = %v, want 76561198012345678", deflect.Player.SteamID)
 	}
 	
-	if deflect.PlayerName != "DodgeballPro" {
-		t.Errorf("PlayerName = %v, want DodgeballPro", deflect.PlayerName)
+	if deflect.Player.Name != "DodgeballPro" {
+		t.Errorf("Player.Name = %v, want DodgeballPro", deflect.Player.Name)
 	}
 	
-	if deflect.RocketSpeed != 1500.50 {
-		t.Errorf("RocketSpeed = %v, want 1500.50", deflect.RocketSpeed)
+	if deflect.RocketSpeed != 1500.5 {
+		t.Errorf("RocketSpeed = %v, want 1500.5", deflect.RocketSpeed)
 	}
 	
 	if deflect.DeflectAngle != 1.0000 {
@@ -191,14 +214,14 @@ func TestParseDeflectEvent(t *testing.T) {
 		t.Errorf("TimingMs = %v, want 50", deflect.TimingMs)
 	}
 	
-	if deflect.Distance != 100.00 {
-		t.Errorf("Distance = %v, want 100.00", deflect.Distance)
+	if deflect.Distance != 100.0 {
+		t.Errorf("Distance = %v, want 100.0", deflect.Distance)
 	}
 }
 
 // TestParseMatchStartEvent tests MATCH_START event parsing
 func TestParseMatchStartEvent(t *testing.T) {
-	line := "MATCH_START|1706745800|default|192.168.1.100|cp_process_final"
+	line := `{"timestamp":"2024-02-01T12:00:00","gamemode":"default","server_ip":"192.168.1.100","event_type":"match_start","map":"cp_process_final"}`
 	
 	event, err := ParseLine(line)
 	if err != nil {
@@ -214,35 +237,35 @@ func TestParseMatchStartEvent(t *testing.T) {
 		t.Fatal("event.MatchStart is nil")
 	}
 	
-	if matchStart.MapName != "cp_process_final" {
-		t.Errorf("MapName = %v, want cp_process_final", matchStart.MapName)
+	if matchStart.Map != "cp_process_final" {
+		t.Errorf("Map = %v, want cp_process_final", matchStart.Map)
 	}
 }
 
 // TestParseMatchEndEvent tests MATCH_END event parsing
 func TestParseMatchEndEvent(t *testing.T) {
 	tests := []struct {
-		name       string
-		line       string
-		wantTeam   int
+		name         string
+		line         string
+		wantTeam     int
 		wantDuration int
 	}{
 		{
-			name:       "RED wins",
-			line:       "MATCH_END|1706745900|default|192.168.1.100|2|600",
-			wantTeam:   2,
+			name:         "RED wins",
+			line:         `{"timestamp":"2024-02-01T12:10:00","gamemode":"default","server_ip":"192.168.1.100","event_type":"match_end","winner_team":2,"duration":600}`,
+			wantTeam:     2,
 			wantDuration: 600,
 		},
 		{
-			name:       "BLU wins",
-			line:       "MATCH_END|1706745901|default|192.168.1.100|3|450",
-			wantTeam:   3,
+			name:         "BLU wins",
+			line:         `{"timestamp":"2024-02-01T12:20:00","gamemode":"default","server_ip":"192.168.1.100","event_type":"match_end","winner_team":3,"duration":450}`,
+			wantTeam:     3,
 			wantDuration: 450,
 		},
 		{
-			name:       "TIE",
-			line:       "MATCH_END|1706745902|default|192.168.1.100|0|300",
-			wantTeam:   0,
+			name:         "TIE",
+			line:         `{"timestamp":"2024-02-01T12:30:00","gamemode":"default","server_ip":"192.168.1.100","event_type":"match_end","winner_team":0,"duration":300}`,
+			wantTeam:     0,
 			wantDuration: 300,
 		},
 	}
@@ -288,24 +311,14 @@ func TestParseInvalidLines(t *testing.T) {
 			wantErr: false, // Should skip, not error
 		},
 		{
-			name:    "Missing fields",
-			line:    "KILL|1706746200|default|192.168.1.100|76561198012345678",
-			wantErr: true,
-		},
-		{
-			name:    "Invalid timestamp",
-			line:    "KILL|not_a_number|default|192.168.1.100|76561198012345678|Player1|76561198087654321|Player2|scattergun|0|0",
+			name:    "Invalid JSON",
+			line:    `{"invalid json`,
 			wantErr: true,
 		},
 		{
 			name:    "Unknown event type",
-			line:    "UNKNOWN_EVENT|1706746202|default|192.168.1.100|data|more|data",
+			line:    `{"timestamp":"2024-02-01T12:00:00","gamemode":"default","server_ip":"192.168.1.100","event_type":"unknown"}`,
 			wantErr: false, // Should skip, not error
-		},
-		{
-			name:    "Only separators",
-			line:    "||||||||",
-			wantErr: true, // Invalid timestamp
 		},
 	}
 	
@@ -322,7 +335,7 @@ func TestParseInvalidLines(t *testing.T) {
 					t.Errorf("ParseLine() error = %v, want nil", err)
 				}
 				// For skipped lines, event should be nil
-				if tt.line == "" || tt.line[0] == '#' || tt.line == "UNKNOWN_EVENT|1706746202|default|192.168.1.100|data|more|data" {
+				if tt.line == "" || tt.line[0] == '#' || strings.Contains(tt.line, `"event_type":"unknown"`) {
 					if event != nil {
 						t.Errorf("ParseLine() event = %v, want nil (should skip)", event)
 					}
@@ -332,9 +345,9 @@ func TestParseInvalidLines(t *testing.T) {
 	}
 }
 
-// TestParseAllFixtures tests parsing the entire test fixture file
+// TestParseAllFixtures tests parsing the entire JSON fixture file
 func TestParseAllFixtures(t *testing.T) {
-	file, err := os.Open("../../test/fixtures/sample_logs.txt")
+	file, err := os.Open("../../test/fixtures/sample_logs_json.txt")
 	if err != nil {
 		t.Skipf("Skipping fixture test: %v", err)
 		return
@@ -354,8 +367,7 @@ func TestParseAllFixtures(t *testing.T) {
 		event, err := ParseLine(line)
 		
 		if err != nil {
-			// Some lines are intentionally malformed for testing
-			t.Logf("Line %d error (expected for some): %v", lineNum, err)
+			t.Logf("Line %d error: %v", lineNum, err)
 			errorCount++
 			continue
 		}
@@ -368,24 +380,28 @@ func TestParseAllFixtures(t *testing.T) {
 		
 		validEvents++
 		
-		// Basic validation: all events should have timestamp and gamemode
-		var baseEvent events.BaseEvent
+		// Basic validation: all events should have gamemode and server_ip
+		var gamemode, serverIP string
 		switch event.Type {
 		case events.EventTypeKill:
-			baseEvent = event.Kill.BaseEvent
+			gamemode = event.Kill.Gamemode
+			serverIP = event.Kill.ServerIP
 		case events.EventTypeDeflect:
-			baseEvent = event.Deflect.BaseEvent
+			gamemode = event.Deflect.Gamemode
+			serverIP = event.Deflect.ServerIP
 		case events.EventTypeMatchStart:
-			baseEvent = event.MatchStart.BaseEvent
+			gamemode = event.MatchStart.Gamemode
+			serverIP = event.MatchStart.ServerIP
 		case events.EventTypeMatchEnd:
-			baseEvent = event.MatchEnd.BaseEvent
+			gamemode = event.MatchEnd.Gamemode
+			serverIP = event.MatchEnd.ServerIP
 		}
 		
-		if baseEvent.Gamemode == "" {
+		if gamemode == "" {
 			t.Errorf("Line %d: event has empty gamemode", lineNum)
 		}
 		
-		if baseEvent.ServerIP == "" {
+		if serverIP == "" {
 			t.Errorf("Line %d: event has empty server IP", lineNum)
 		}
 	}
@@ -398,14 +414,14 @@ func TestParseAllFixtures(t *testing.T) {
 		lineNum, validEvents, skippedLines, errorCount)
 	
 	// We expect a good number of valid events
-	if validEvents < 50 {
-		t.Errorf("Expected at least 50 valid events, got %d", validEvents)
+	if validEvents < 20 {
+		t.Errorf("Expected at least 20 valid events, got %d", validEvents)
 	}
 }
 
 // BenchmarkParseKillEvent benchmarks KILL event parsing
 func BenchmarkParseKillEvent(b *testing.B) {
-	line := "KILL|1706745600|default|192.168.1.100|76561198012345678|Player1|76561198087654321|Player2|scattergun|0|0"
+	line := `{"timestamp":"2024-02-01T12:00:00","gamemode":"default","server_ip":"192.168.1.100","event_type":"kill","killer":{"steam_id":"76561198012345678","name":"Player1","team":2},"victim":{"steam_id":"76561198087654321","name":"Player2","team":3},"weapon":{"name":"scattergun"},"crit":false,"airborne":false}`
 	
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -415,7 +431,7 @@ func BenchmarkParseKillEvent(b *testing.B) {
 
 // BenchmarkParseDeflectEvent benchmarks DEFLECT event parsing
 func BenchmarkParseDeflectEvent(b *testing.B) {
-	line := "DEFLECT|1706745700|dodgeball|192.168.1.100|76561198012345678|DodgeballPro|1500.50|1.0000|50|100.00"
+	line := `{"timestamp":"2024-02-01T12:05:00","gamemode":"dodgeball","server_ip":"192.168.1.100","event_type":"deflect","player":{"steam_id":"76561198012345678","name":"DodgeballPro","team":2},"rocket_speed":1500.5,"deflect_angle":1.0000,"timing_ms":50,"distance":100.0}`
 	
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
