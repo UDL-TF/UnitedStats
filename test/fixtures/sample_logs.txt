@@ -1,0 +1,211 @@
+# SuperLogs Test Fixtures
+# 
+# These are sample log lines that the SourceMod plugins will generate.
+# The Go parser must handle ALL of these correctly.
+#
+# Format: EVENT_TYPE|timestamp|gamemode|server_ip|...fields
+
+# ============================================================================
+# KILL Events
+# Format: KILL|timestamp|gamemode|server_ip|killer_steamid|killer_name|victim_steamid|victim_name|weapon|crit|airborne
+# ============================================================================
+
+# Standard kill
+KILL|1706745600|default|192.168.1.100|76561198012345678|Player1|76561198087654321|Player2|scattergun|0|0
+
+# Critical hit
+KILL|1706745601|default|192.168.1.100|76561198012345678|Player1|76561198087654321|Player2|rocket_launcher|1|0
+
+# Airshot (airborne victim)
+KILL|1706745602|default|192.168.1.100|76561198012345678|SniperPro|76561198087654321|ScoutMain|tf_projectile_pipe_remote|0|1
+
+# Critical airshot
+KILL|1706745603|default|192.168.1.100|76561198012345678|DemoGod|76561198087654321|JumpingSoldier|sticky_launcher|1|1
+
+# ============================================================================
+# Special Character Tests (Names with pipes, quotes, etc.)
+# ============================================================================
+
+# Name with escaped pipe
+KILL|1706745604|default|192.168.1.100|76561198012345678|Player\\pOne|76561198087654321|NormalName|minigun|0|0
+
+# Name with special characters (escaped)
+KILL|1706745605|default|192.168.1.100|76561198012345678|[TF2]\\pBot\\p2000|76561198087654321|l33t\\pplayer|shotgun_primary|0|0
+
+# Name with escaped backslash
+KILL|1706745606|default|192.168.1.100|76561198012345678|Player\\\\One|76561198087654321|Victim|smg|0|0
+
+# Name with escaped newline (shouldn't happen but test it)
+KILL|1706745607|default|192.168.1.100|76561198012345678|Multi\\nLine\\nName|76561198087654321|TestPlayer|flamethrower|0|0
+
+# Unicode/emoji in name (if supported)
+KILL|1706745608|default|192.168.1.100|76561198012345678|Player😀|76561198087654321|VictimTest|knife|0|0
+
+# ============================================================================
+# Different Weapon Types
+# ============================================================================
+
+# Melee
+KILL|1706745610|default|192.168.1.100|76561198012345678|SpyMain|76561198087654321|BackstabVictim|knife|0|0
+
+# Projectile
+KILL|1706745611|default|192.168.1.100|76561198012345678|SoldierMain|76561198087654321|ScoutTarget|tf_projectile_rocket|0|1
+
+# Headshot (sniper rifle)
+KILL|1706745612|default|192.168.1.100|76561198012345678|SniperPro|76561198087654321|HeavyTarget|sniperrifle|1|0
+
+# Sentry gun
+KILL|1706745613|default|192.168.1.100|76561198012345678|EngineerMain|76561198087654321|ScoutRusher|obj_sentrygun|0|0
+
+# Taunt kill
+KILL|1706745614|default|192.168.1.100|76561198012345678|TauntMaster|76561198087654321|UnluckyVictim|taunt_pyro|0|0
+
+# ============================================================================
+# Edge Cases
+# ============================================================================
+
+# Very long player names (max 64 chars)
+KILL|1706745620|default|192.168.1.100|76561198012345678|ThisIsAVeryLongPlayerNameThatGoesOnAndOnAndOnUpToSixtyFourCharactersExactly|76561198087654321|ShortName|pistol|0|0
+
+# Minimum timestamp
+KILL|0|default|192.168.1.100|76561198012345678|Player1|76561198087654321|Player2|shotgun_pyro|0|0
+
+# Future timestamp
+KILL|2147483647|default|192.168.1.100|76561198012345678|FuturePlayer|76561198087654321|PresentPlayer|scattergun|0|0
+
+# Different server IPs
+KILL|1706745621|default|10.0.0.1|76561198012345678|LocalPlayer|76561198087654321|RemotePlayer|medigun|0|0
+KILL|1706745622|default|172.16.0.50|76561198012345678|LANPlayer1|76561198087654321|LANPlayer2|syringegun_medic|0|0
+
+# ============================================================================
+# DEFLECT Events (Dodgeball)
+# Format: DEFLECT|timestamp|gamemode|server_ip|player_steamid|player_name|rocket_speed|deflect_angle|timing_ms|distance
+# ============================================================================
+
+# Perfect deflect
+DEFLECT|1706745700|dodgeball|192.168.1.100|76561198012345678|DodgeballPro|1500.50|1.0000|50|100.00
+
+# Good deflect
+DEFLECT|1706745701|dodgeball|192.168.1.100|76561198012345678|GoodPlayer|1200.00|0.9500|120|150.25
+
+# Mediocre deflect
+DEFLECT|1706745702|dodgeball|192.168.1.100|76561198012345678|OkayPlayer|800.00|0.7500|200|200.00
+
+# Close-range deflect
+DEFLECT|1706745703|dodgeball|192.168.1.100|76561198012345678|CloseDeflector|1800.00|0.9800|30|50.00
+
+# Far-range deflect
+DEFLECT|1706745704|dodgeball|192.168.1.100|76561198012345678|FarDeflector|900.00|0.8500|180|500.00
+
+# Very fast rocket
+DEFLECT|1706745705|dodgeball|192.168.1.100|76561198012345678|SpeedDeflector|2500.00|0.9900|25|75.00
+
+# Slow rocket
+DEFLECT|1706745706|dodgeball|192.168.1.100|76561198012345678|SlowDeflector|600.00|0.8000|250|120.00
+
+# Edge case: Zero distance (shouldn't happen but test)
+DEFLECT|1706745707|dodgeball|192.168.1.100|76561198012345678|ZeroDistance|1000.00|1.0000|100|0.00
+
+# Edge case: Perfect angle, slow timing
+DEFLECT|1706745708|dodgeball|192.168.1.100|76561198012345678|PerfectAngle|1000.00|1.0000|500|100.00
+
+# Special character in name
+DEFLECT|1706745709|dodgeball|192.168.1.100|76561198012345678|Player\\pWithPipe|1100.00|0.9200|150|110.00
+
+# ============================================================================
+# MATCH Events
+# ============================================================================
+
+# Match start
+MATCH_START|1706745800|default|192.168.1.100|cp_process_final
+
+# Match start with special map name
+MATCH_START|1706745801|default|192.168.1.100|koth_product_rcX
+
+# Match start with escaped characters
+MATCH_START|1706745802|default|192.168.1.100|custom\\pmap\\p2024
+
+# Match end - RED wins
+MATCH_END|1706745900|default|192.168.1.100|2|600
+
+# Match end - BLU wins
+MATCH_END|1706745901|default|192.168.1.100|3|450
+
+# Match end - TIE
+MATCH_END|1706745902|default|192.168.1.100|0|300
+
+# Match end - very short match
+MATCH_END|1706745903|default|192.168.1.100|2|10
+
+# Match end - very long match
+MATCH_END|1706745904|default|192.168.1.100|3|3600
+
+# ============================================================================
+# Gamemode Variations
+# ============================================================================
+
+# Dodgeball gamemode
+KILL|1706746000|dodgeball|192.168.1.100|76561198012345678|DodgeballPlayer|76561198087654321|RocketVictim|tf_projectile_rocket|0|1
+
+# MGE gamemode
+KILL|1706746001|mge|192.168.1.100|76561198012345678|MGEPlayer1|76561198087654321|MGEPlayer2|rocket_launcher|0|0
+
+# Ultiduo gamemode
+KILL|1706746002|ultiduo|192.168.1.100|76561198012345678|UltiduoSoldier|76561198087654321|UltiduoMedic|scattergun|0|0
+
+# ============================================================================
+# Stress Test - Rapid Events
+# ============================================================================
+
+# 10 rapid kills (1 second apart)
+KILL|1706746100|default|192.168.1.100|76561198012345678|RapidKiller1|76561198087654321|Victim1|scattergun|0|0
+KILL|1706746101|default|192.168.1.100|76561198012345678|RapidKiller2|76561198087654321|Victim2|scattergun|0|0
+KILL|1706746102|default|192.168.1.100|76561198012345678|RapidKiller3|76561198087654321|Victim3|scattergun|0|0
+KILL|1706746103|default|192.168.1.100|76561198012345678|RapidKiller4|76561198087654321|Victim4|scattergun|0|0
+KILL|1706746104|default|192.168.1.100|76561198012345678|RapidKiller5|76561198087654321|Victim5|scattergun|0|0
+KILL|1706746105|default|192.168.1.100|76561198012345678|RapidKiller6|76561198087654321|Victim6|scattergun|0|0
+KILL|1706746106|default|192.168.1.100|76561198012345678|RapidKiller7|76561198087654321|Victim7|scattergun|0|0
+KILL|1706746107|default|192.168.1.100|76561198012345678|RapidKiller8|76561198087654321|Victim8|scattergun|0|0
+KILL|1706746108|default|192.168.1.100|76561198012345678|RapidKiller9|76561198087654321|Victim9|scattergun|0|0
+KILL|1706746109|default|192.168.1.100|76561198012345678|RapidKiller10|76561198087654321|Victim10|scattergun|0|0
+
+# ============================================================================
+# Malformed/Invalid Lines (Parser Should Handle Gracefully)
+# ============================================================================
+
+# Missing fields (should be rejected)
+KILL|1706746200|default|192.168.1.100|76561198012345678
+
+# Extra fields (should ignore extras)
+KILL|1706746201|default|192.168.1.100|76561198012345678|Player1|76561198087654321|Player2|scattergun|0|0|extra|fields|here
+
+# Unknown event type (should skip)
+UNKNOWN_EVENT|1706746202|default|192.168.1.100|data|more|data
+
+# Empty line (should skip)
+
+
+# Line with only separators
+||||||||
+
+# Invalid timestamp (non-numeric)
+KILL|not_a_number|default|192.168.1.100|76561198012345678|Player1|76561198087654321|Player2|scattergun|0|0
+
+# ============================================================================
+# Real-World Examples (Based on Actual TF2 Gameplay)
+# ============================================================================
+
+# Competitive 6v6 scenario
+MATCH_START|1706746300|default|192.168.1.100|cp_process_final
+KILL|1706746310|default|192.168.1.100|76561198012345678|Scout_Main|76561198087654321|Roamer_Soldier|scattergun|0|0
+KILL|1706746315|default|192.168.1.100|76561198011111111|Demo_Main|76561198022222222|Pocket_Soldier|sticky_launcher|0|0
+KILL|1706746320|default|192.168.1.100|76561198033333333|Medic_Main|76561198044444444|Scout_Flank|ubersaw|1|0
+MATCH_END|1706746900|default|192.168.1.100|2|600
+
+# Dodgeball match
+MATCH_START|1706747000|dodgeball|192.168.1.100|tfdb_map_v1
+DEFLECT|1706747010|dodgeball|192.168.1.100|76561198012345678|Pro_Pyro_1|1200.00|0.9500|100|120.00
+DEFLECT|1706747015|dodgeball|192.168.1.100|76561198087654321|Pro_Pyro_2|1400.00|0.9800|80|100.00
+DEFLECT|1706747020|dodgeball|192.168.1.100|76561198012345678|Pro_Pyro_1|1600.00|0.9900|60|90.00
+KILL|1706747025|dodgeball|192.168.1.100|76561198012345678|Pro_Pyro_1|76561198087654321|Pro_Pyro_2|tf_projectile_rocket|0|0
+MATCH_END|1706747200|dodgeball|192.168.1.100|2|200
