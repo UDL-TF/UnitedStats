@@ -28,6 +28,7 @@
 
 #include <sourcemod>
 #include <json>
+#include <socket>
 
 // Configuration
 #define SUPERLOGS_VERSION "2.0.0"
