@@ -1,0 +1,115 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: unitedstats-postgres
+    environment:
+      POSTGRES_USER: unitedstats
+      POSTGRES_PASSWORD: unitedstats
+      POSTGRES_DB: unitedstats
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./schema.sql:/docker-entrypoint-initdb.d/schema.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U unitedstats"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - unitedstats
+
+  # RabbitMQ Message Broker
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: unitedstats-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5672:5672"   # AMQP
+      - "15672:15672" # Management UI
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - unitedstats
+
+  # Event Collector (UDP receiver -> RabbitMQ)
+  collector:
+    build:
+      context: .
+      dockerfile: Dockerfile.collector
+    container_name: unitedstats-collector
+    environment:
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+      UDP_PORT: 27500
+    ports:
+      - "27500:27500/udp"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - unitedstats
+
+  # Event Processor (RabbitMQ -> PostgreSQL)
+  processor:
+    build:
+      context: .
+      dockerfile: Dockerfile.processor
+    container_name: unitedstats-processor
+    environment:
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: unitedstats
+      DB_PASSWORD: unitedstats
+      DB_NAME: unitedstats
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - unitedstats
+    deploy:
+      replicas: 2  # Run 2 processor instances
+
+  # REST API (PostgreSQL -> HTTP)
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: unitedstats-api
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: unitedstats
+      DB_PASSWORD: unitedstats
+      DB_NAME: unitedstats
+      API_PORT: 8080
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - unitedstats
+
+volumes:
+  postgres_data:
+  rabbitmq_data:
+
+networks:
+  unitedstats:
+    driver: bridge
