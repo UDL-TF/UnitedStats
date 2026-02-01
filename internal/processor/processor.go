@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 
 	"github.com/ThreeDotsLabs/watermill"
 	"github.com/ThreeDotsLabs/watermill/message"
@@ -224,16 +223,4 @@ func (p *Processor) processMatchStartEvent(ctx context.Context, matchStart *even
 	// Create new match
 	_, err := p.store.CreateMatch(ctx, matchStart.ServerIP, matchStart.Map, matchStart.Gamemode, matchStart.Timestamp)
 	return err
-}
-
-// processMatchEndEvent processes a match end event
-func (p *Processor) processMatchEndEvent(ctx context.Context, matchEnd *events.MatchEndEvent) error {
-	// Get active match
-	match, err := p.store.GetOrCreateActiveMatch(ctx, matchEnd.ServerIP, "", matchEnd.Gamemode)
-	if err != nil {
-		return err
-	}
-
-	// End the match
-	return p.store.EndMatch(ctx, match.ID, matchEnd.WinnerTeam, 0, 0) // TODO: Get actual scores
 }

@@ -3,10 +3,8 @@ package processor
 import (
 	"context"
 	"fmt"
-	"log"
 
 	"github.com/UDL-TF/UnitedStats/internal/mmr"
-	"github.com/UDL-TF/UnitedStats/internal/store"
 	"github.com/UDL-TF/UnitedStats/pkg/events"
 )
 
