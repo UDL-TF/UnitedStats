@@ -1,8 +1,13 @@
 # UnitedStats - TF2 Statistics & Tournament Platform
 
 [![License](https://img.shields.io/github/license/UDL-TF/UnitedStats)](./LICENSE)
+[![CI](https://github.com/UDL-TF/UnitedStats/actions/workflows/ci.yml/badge.svg)](https://github.com/UDL-TF/UnitedStats/actions/workflows/ci.yml)
+[![Collector](https://github.com/UDL-TF/UnitedStats/actions/workflows/collector.yml/badge.svg)](https://github.com/UDL-TF/UnitedStats/actions/workflows/collector.yml)
+[![Processor](https://github.com/UDL-TF/UnitedStats/actions/workflows/processor.yml/badge.svg)](https://github.com/UDL-TF/UnitedStats/actions/workflows/processor.yml)
+[![API](https://github.com/UDL-TF/UnitedStats/actions/workflows/api.yml/badge.svg)](https://github.com/UDL-TF/UnitedStats/actions/workflows/api.yml)
+[![codecov](https://codecov.io/gh/UDL-TF/UnitedStats/branch/main/graph/badge.svg)](https://codecov.io/gh/UDL-TF/UnitedStats)
 
-**Status**: 🚧 In Development - SourceMod Plugins & Parser Foundation
+**Complete backend system with MMR rating, event processing, and REST API**
 
 ---
 
