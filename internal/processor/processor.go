@@ -180,6 +180,21 @@ func (p *Processor) processKillEvent(ctx context.Context, kill *events.KillEvent
 		return fmt.Errorf("failed to get/create match: %w", err)
 	}
 
+	// Get or create players
+	killer, err := p.store.GetOrCreatePlayer(ctx, kill.Killer.SteamID, kill.Killer.Name)
+	if err != nil {
+		return err
+	}
+
+	victim, err := p.store.GetOrCreatePlayer(ctx, kill.Victim.SteamID, kill.Victim.Name)
+	if err != nil {
+		return err
+	}
+
+	// Track players in match
+	p.store.GetOrCreateMatchPlayer(ctx, match.ID, killer.ID, kill.Killer.Team)
+	p.store.GetOrCreateMatchPlayer(ctx, match.ID, victim.ID, kill.Victim.Team)
+
 	// Insert kill
 	return p.store.InsertKill(ctx, kill, eventID, match.ID)
 }

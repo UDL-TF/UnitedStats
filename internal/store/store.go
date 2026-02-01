@@ -460,6 +460,305 @@ func (s *Store) RefreshLeaderboard(ctx context.Context) error {
 }
 
 // ============================================================================
+// MATCH QUERIES
+// ============================================================================
+
+// MatchWithPlayers represents a match with player stats
+type MatchWithPlayers struct {
+	Match
+	Players []MatchPlayerStats
+}
+
+// MatchPlayerStats represents a player's stats in a match
+type MatchPlayerStats struct {
+	PlayerID      int64
+	SteamID       string
+	Name          string
+	Team          int
+	PrimaryClass  string
+	Kills         int
+	Deaths        int
+	Assists       int
+	DamageDealt   int
+	HealingDone   int
+	Airshots      int
+	Headshots     int
+	Backstabs     int
+	Deflects      int
+	MMRBefore     sql.NullInt32
+	MMRAfter      sql.NullInt32
+	MMRChange     sql.NullInt32
+}
+
+// GetMatchByID gets a match by ID with all player stats
+func (s *Store) GetMatchByID(ctx context.Context, matchID int64) (*MatchWithPlayers, error) {
+	// Get match
+	var match Match
+	err := s.db.QueryRowContext(ctx, `
+		SELECT id, uuid, server_ip, map, gamemode, started_at, ended_at,
+		       duration_seconds, winner_team, red_score, blu_score,
+		       tournament_id, tournament_match_id, created_at
+		FROM matches
+		WHERE id = $1
+	`, matchID).Scan(
+		&match.ID, &match.UUID, &match.ServerIP, &match.Map, &match.Gamemode,
+		&match.StartedAt, &match.EndedAt, &match.DurationSeconds, &match.WinnerTeam,
+		&match.RedScore, &match.BluScore, &match.TournamentID, &match.TournamentMatchID,
+		&match.CreatedAt,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get match: %w", err)
+	}
+
+	// Get players
+	rows, err := s.db.QueryContext(ctx, `
+		SELECT mp.player_id, p.steam_id, p.name, mp.team, mp.primary_class,
+		       mp.kills, mp.deaths, mp.assists, mp.damage_dealt, mp.healing_done,
+		       mp.airshots, mp.headshots, mp.backstabs, mp.deflects,
+		       mp.mmr_before, mp.mmr_after, mp.mmr_change
+		FROM match_players mp
+		JOIN players p ON mp.player_id = p.id
+		WHERE mp.match_id = $1
+		ORDER BY mp.team, mp.kills DESC
+	`, matchID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get match players: %w", err)
+	}
+	defer rows.Close()
+
+	var players []MatchPlayerStats
+	for rows.Next() {
+		var p MatchPlayerStats
+		var primaryClass sql.NullString
+		err := rows.Scan(
+			&p.PlayerID, &p.SteamID, &p.Name, &p.Team, &primaryClass,
+			&p.Kills, &p.Deaths, &p.Assists, &p.DamageDealt, &p.HealingDone,
+			&p.Airshots, &p.Headshots, &p.Backstabs, &p.Deflects,
+			&p.MMRBefore, &p.MMRAfter, &p.MMRChange,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan player: %w", err)
+		}
+		if primaryClass.Valid {
+			p.PrimaryClass = primaryClass.String
+		}
+		players = append(players, p)
+	}
+
+	return &MatchWithPlayers{
+		Match:   match,
+		Players: players,
+	}, rows.Err()
+}
+
+// GetRecentMatches gets recent matches with pagination
+func (s *Store) GetRecentMatches(ctx context.Context, limit, offset int) ([]*Match, error) {
+	rows, err := s.db.QueryContext(ctx, `
+		SELECT id, uuid, server_ip, map, gamemode, started_at, ended_at,
+		       duration_seconds, winner_team, red_score, blu_score,
+		       tournament_id, tournament_match_id, created_at
+		FROM matches
+		WHERE ended_at IS NOT NULL
+		ORDER BY started_at DESC
+		LIMIT $1 OFFSET $2
+	`, limit, offset)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query matches: %w", err)
+	}
+	defer rows.Close()
+
+	var matches []*Match
+	for rows.Next() {
+		var m Match
+		err := rows.Scan(
+			&m.ID, &m.UUID, &m.ServerIP, &m.Map, &m.Gamemode,
+			&m.StartedAt, &m.EndedAt, &m.DurationSeconds, &m.WinnerTeam,
+			&m.RedScore, &m.BluScore, &m.TournamentID, &m.TournamentMatchID,
+			&m.CreatedAt,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan match: %w", err)
+		}
+		matches = append(matches, &m)
+	}
+
+	return matches, rows.Err()
+}
+
+// GetPlayerMatchHistory gets a player's match history
+func (s *Store) GetPlayerMatchHistory(ctx context.Context, playerID int64, limit, offset int) ([]*Match, error) {
+	rows, err := s.db.QueryContext(ctx, `
+		SELECT m.id, m.uuid, m.server_ip, m.map, m.gamemode, m.started_at, m.ended_at,
+		       m.duration_seconds, m.winner_team, m.red_score, m.blu_score,
+		       m.tournament_id, m.tournament_match_id, m.created_at
+		FROM matches m
+		JOIN match_players mp ON m.id = mp.match_id
+		WHERE mp.player_id = $1 AND m.ended_at IS NOT NULL
+		ORDER BY m.started_at DESC
+		LIMIT $2 OFFSET $3
+	`, playerID, limit, offset)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query player matches: %w", err)
+	}
+	defer rows.Close()
+
+	var matches []*Match
+	for rows.Next() {
+		var m Match
+		err := rows.Scan(
+			&m.ID, &m.UUID, &m.ServerIP, &m.Map, &m.Gamemode,
+			&m.StartedAt, &m.EndedAt, &m.DurationSeconds, &m.WinnerTeam,
+			&m.RedScore, &m.BluScore, &m.TournamentID, &m.TournamentMatchID,
+			&m.CreatedAt,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan match: %w", err)
+		}
+		matches = append(matches, &m)
+	}
+
+	return matches, rows.Err()
+}
+
+// ============================================================================
+// MMR UPDATES
+// ============================================================================
+
+// UpdatePlayerMMR updates a player's MMR and tracks peak MMR
+func (s *Store) UpdatePlayerMMR(ctx context.Context, playerID int64, newMMR int) error {
+	_, err := s.db.ExecContext(ctx, `
+		UPDATE players
+		SET mmr = $2,
+		    peak_mmr = GREATEST(peak_mmr, $2),
+		    mmr_updated_at = NOW(),
+		    updated_at = NOW()
+		WHERE id = $1
+	`, playerID, newMMR)
+	return err
+}
+
+// UpdateMatchPlayerMMR updates MMR data for a player in a match
+func (s *Store) UpdateMatchPlayerMMR(ctx context.Context, matchID, playerID int64, mmrBefore, mmrAfter int) error {
+	change := mmrAfter - mmrBefore
+	_, err := s.db.ExecContext(ctx, `
+		UPDATE match_players
+		SET mmr_before = $3,
+		    mmr_after = $4,
+		    mmr_change = $5
+		WHERE match_id = $1 AND player_id = $2
+	`, matchID, playerID, mmrBefore, mmrAfter, change)
+	return err
+}
+
+// GetOrCreateMatchPlayer creates or gets a match_player entry
+func (s *Store) GetOrCreateMatchPlayer(ctx context.Context, matchID, playerID int64, team int) error {
+	_, err := s.db.ExecContext(ctx, `
+		INSERT INTO match_players (match_id, player_id, team)
+		VALUES ($1, $2, $3)
+		ON CONFLICT (match_id, player_id) DO NOTHING
+	`, matchID, playerID, team)
+	return err
+}
+
+// GetMatchTeamPlayers gets all player IDs and MMRs for a team in a match
+func (s *Store) GetMatchTeamPlayers(ctx context.Context, matchID int64, team int) ([]int64, []int, error) {
+	rows, err := s.db.QueryContext(ctx, `
+		SELECT p.id, p.mmr
+		FROM match_players mp
+		JOIN players p ON mp.player_id = p.id
+		WHERE mp.match_id = $1 AND mp.team = $2
+	`, matchID, team)
+	if err != nil {
+		return nil, nil, err
+	}
+	defer rows.Close()
+
+	var playerIDs []int64
+	var mmrs []int
+	for rows.Next() {
+		var id int64
+		var mmr int
+		if err := rows.Scan(&id, &mmr); err != nil {
+			return nil, nil, err
+		}
+		playerIDs = append(playerIDs, id)
+		mmrs = append(mmrs, mmr)
+	}
+
+	return playerIDs, mmrs, rows.Err()
+}
+
+// ============================================================================
+// STATISTICS QUERIES
+// ============================================================================
+
+// WeaponStats represents aggregate weapon statistics
+type WeaponStats struct {
+	Weapon     string
+	Kills      int
+	Headshots  int
+	Airshots   int
+	AvgKills   float64
+	UniqueUsers int
+}
+
+// GetWeaponStats gets aggregate statistics per weapon
+func (s *Store) GetWeaponStats(ctx context.Context, limit int) ([]*WeaponStats, error) {
+	rows, err := s.db.QueryContext(ctx, `
+		SELECT 
+			weapon,
+			COUNT(*) as kills,
+			SUM(CASE WHEN headshot THEN 1 ELSE 0 END) as headshots,
+			SUM(CASE WHEN airborne THEN 1 ELSE 0 END) as airshots,
+			COUNT(*)::float / COUNT(DISTINCT killer_id) as avg_kills_per_user,
+			COUNT(DISTINCT killer_id) as unique_users
+		FROM kills
+		GROUP BY weapon
+		ORDER BY kills DESC
+		LIMIT $1
+	`, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var stats []*WeaponStats
+	for rows.Next() {
+		var ws WeaponStats
+		if err := rows.Scan(&ws.Weapon, &ws.Kills, &ws.Headshots, &ws.Airshots, &ws.AvgKills, &ws.UniqueUsers); err != nil {
+			return nil, err
+		}
+		stats = append(stats, &ws)
+	}
+
+	return stats, rows.Err()
+}
+
+// StatsOverview represents global statistics
+type StatsOverview struct {
+	TotalPlayers int
+	TotalMatches int
+	TotalKills   int
+	TotalAirshots int
+	AvgMMR       float64
+}
+
+// GetStatsOverview gets global statistics
+func (s *Store) GetStatsOverview(ctx context.Context) (*StatsOverview, error) {
+	var stats StatsOverview
+	err := s.db.QueryRowContext(ctx, `
+		SELECT 
+			(SELECT COUNT(*) FROM players) as total_players,
+			(SELECT COUNT(*) FROM matches WHERE ended_at IS NOT NULL) as total_matches,
+			(SELECT COUNT(*) FROM kills) as total_kills,
+			(SELECT COUNT(*) FROM airshots) as total_airshots,
+			(SELECT AVG(mmr) FROM players WHERE last_seen > NOW() - INTERVAL '30 days') as avg_mmr
+	`).Scan(&stats.TotalPlayers, &stats.TotalMatches, &stats.TotalKills, &stats.TotalAirshots, &stats.AvgMMR)
+	
+	return &stats, err
+}
+
+// ============================================================================
 // UTILITY FUNCTIONS
 // ============================================================================
 

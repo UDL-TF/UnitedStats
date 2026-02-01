@@ -179,6 +179,12 @@ func (a *API) getPlayerStats(c *gin.Context) {
 // getPlayerMatches returns a player's match history
 func (a *API) getPlayerMatches(c *gin.Context) {
 	steamID := c.Param("steam_id")
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
+	offset, _ := strconv.Atoi(c.DefaultQuery("offset", "0"))
+
+	if limit > 100 {
+		limit = 100
+	}
 
 	player, err := a.store.GetPlayerBySteamID(c.Request.Context(), steamID)
 	if err != nil {
@@ -186,31 +192,62 @@ func (a *API) getPlayerMatches(c *gin.Context) {
 		return
 	}
 
-	// TODO: Implement match history query
+	matches, err := a.store.GetPlayerMatchHistory(c.Request.Context(), player.ID, limit, offset)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch match history"})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"player_id": player.ID,
-		"matches":   []interface{}{},
-		"count":     0,
+		"steam_id":  player.SteamID,
+		"matches":   matches,
+		"count":     len(matches),
+		"limit":     limit,
+		"offset":    offset,
 	})
 }
 
 // getMatches returns recent matches
 func (a *API) getMatches(c *gin.Context) {
-	// TODO: Implement matches query
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "50"))
+	offset, _ := strconv.Atoi(c.DefaultQuery("offset", "0"))
+
+	if limit > 200 {
+		limit = 200
+	}
+
+	matches, err := a.store.GetRecentMatches(c.Request.Context(), limit, offset)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch matches"})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
-		"matches": []interface{}{},
-		"count":   0,
+		"matches": matches,
+		"count":   len(matches),
+		"limit":   limit,
+		"offset":  offset,
 	})
 }
 
 // getMatch returns a specific match
 func (a *API) getMatch(c *gin.Context) {
-	matchID := c.Param("id")
+	matchIDStr := c.Param("id")
+	matchID, err := strconv.ParseInt(matchIDStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid match ID"})
+		return
+	}
 
-	// TODO: Implement match detail query
+	match, err := a.store.GetMatchByID(c.Request.Context(), matchID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Match not found"})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
-		"match_id": matchID,
-		"match":    nil,
+		"match": match,
 	})
 }
 
@@ -228,18 +265,30 @@ func (a *API) getMatchEvents(c *gin.Context) {
 
 // getStatsOverview returns overall statistics
 func (a *API) getStatsOverview(c *gin.Context) {
-	// TODO: Implement stats overview
-	c.JSON(http.StatusOK, gin.H{
-		"total_players": 0,
-		"total_matches": 0,
-		"total_kills":   0,
-	})
+	stats, err := a.store.GetStatsOverview(c.Request.Context())
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch stats"})
+		return
+	}
+
+	c.JSON(http.StatusOK, stats)
 }
 
 // getWeaponStats returns weapon statistics
 func (a *API) getWeaponStats(c *gin.Context) {
-	// TODO: Implement weapon stats query
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "50"))
+	if limit > 200 {
+		limit = 200
+	}
+
+	stats, err := a.store.GetWeaponStats(c.Request.Context(), limit)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch weapon stats"})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
-		"weapons": []interface{}{},
+		"weapons": stats,
+		"count":   len(stats),
 	})
 }
