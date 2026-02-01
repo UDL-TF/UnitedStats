@@ -1,0 +1,7 @@
+{
+  "editor.formatOnSave": false,
+   "SourcePawnLanguageServer.includeDirectories": [
+    "/home/tolfx/dev/UDL/UnitedStats/sourcemod/scripting/include",
+    "/home/tolfx/sourcemodAPI/addons/sourcemod/scripting/include",
+  ],
+}
