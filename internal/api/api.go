@@ -32,8 +32,11 @@ func New(cfg Config) *API {
 		store:  cfg.Store,
 		router: router,
 		server: &http.Server{
-			Addr:    fmt.Sprintf(":%d", cfg.Port),
-			Handler: router,
+			Addr:              fmt.Sprintf(":%d", cfg.Port),
+			Handler:           router,
+			ReadHeaderTimeout: 10 * time.Second,
+			ReadTimeout:       30 * time.Second,
+			WriteTimeout:      30 * time.Second,
 		},
 	}
 
@@ -102,8 +105,20 @@ func (a *API) healthCheck(c *gin.Context) {
 // getLeaderboard returns the top players
 func (a *API) getLeaderboard(c *gin.Context) {
 	// Parse query parameters
-	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "100"))
-	offset, _ := strconv.Atoi(c.DefaultQuery("offset", "0"))
+	limit := 100
+	offset := 0
+	
+	if limitStr := c.DefaultQuery("limit", "100"); limitStr != "" {
+		if val, err := strconv.Atoi(limitStr); err == nil {
+			limit = val
+		}
+	}
+	
+	if offsetStr := c.DefaultQuery("offset", "0"); offsetStr != "" {
+		if val, err := strconv.Atoi(offsetStr); err == nil {
+			offset = val
+		}
+	}
 
 	// Limit max results
 	if limit > 500 {
@@ -179,8 +194,20 @@ func (a *API) getPlayerStats(c *gin.Context) {
 // getPlayerMatches returns a player's match history
 func (a *API) getPlayerMatches(c *gin.Context) {
 	steamID := c.Param("steam_id")
-	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
-	offset, _ := strconv.Atoi(c.DefaultQuery("offset", "0"))
+	limit := 20
+	offset := 0
+	
+	if limitStr := c.DefaultQuery("limit", "20"); limitStr != "" {
+		if val, err := strconv.Atoi(limitStr); err == nil {
+			limit = val
+		}
+	}
+	
+	if offsetStr := c.DefaultQuery("offset", "0"); offsetStr != "" {
+		if val, err := strconv.Atoi(offsetStr); err == nil {
+			offset = val
+		}
+	}
 
 	if limit > 100 {
 		limit = 100
@@ -210,8 +237,20 @@ func (a *API) getPlayerMatches(c *gin.Context) {
 
 // getMatches returns recent matches
 func (a *API) getMatches(c *gin.Context) {
-	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "50"))
-	offset, _ := strconv.Atoi(c.DefaultQuery("offset", "0"))
+	limit := 50
+	offset := 0
+	
+	if limitStr := c.DefaultQuery("limit", "50"); limitStr != "" {
+		if val, err := strconv.Atoi(limitStr); err == nil {
+			limit = val
+		}
+	}
+	
+	if offsetStr := c.DefaultQuery("offset", "0"); offsetStr != "" {
+		if val, err := strconv.Atoi(offsetStr); err == nil {
+			offset = val
+		}
+	}
 
 	if limit > 200 {
 		limit = 200
@@ -276,7 +315,14 @@ func (a *API) getStatsOverview(c *gin.Context) {
 
 // getWeaponStats returns weapon statistics
 func (a *API) getWeaponStats(c *gin.Context) {
-	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "50"))
+	limit := 50
+	
+	if limitStr := c.DefaultQuery("limit", "50"); limitStr != "" {
+		if val, err := strconv.Atoi(limitStr); err == nil {
+			limit = val
+		}
+	}
+	
 	if limit > 200 {
 		limit = 200
 	}

@@ -74,7 +74,10 @@ func (c *Collector) readLoop(ctx context.Context) {
 		}
 
 		// Set read deadline to allow context cancellation
-		c.conn.SetReadDeadline(time.Now().Add(1 * time.Second))
+		if err := c.conn.SetReadDeadline(time.Now().Add(1 * time.Second)); err != nil {
+			c.logger.Error("Failed to set read deadline", err, watermill.LogFields{})
+			continue
+		}
 
 		n, addr, err := c.conn.ReadFromUDP(buffer)
 		if err != nil {

@@ -1,6 +1,44 @@
 package events
 
-import "time"
+import (
+	"encoding/json"
+	"fmt"
+	"time"
+)
+
+// FlexibleTime is a custom time type that can parse multiple timestamp formats
+type FlexibleTime struct {
+	time.Time
+}
+
+// UnmarshalJSON implements json.Unmarshaler for flexible timestamp parsing
+func (ft *FlexibleTime) UnmarshalJSON(data []byte) error {
+	var s string
+	if err := json.Unmarshal(data, &s); err != nil {
+		return err
+	}
+
+	// Try RFC3339 with timezone first
+	t, err := time.Parse(time.RFC3339, s)
+	if err == nil {
+		ft.Time = t
+		return nil
+	}
+
+	// Try without timezone (assume UTC)
+	t, err = time.Parse("2006-01-02T15:04:05", s)
+	if err == nil {
+		ft.Time = t.UTC()
+		return nil
+	}
+
+	return fmt.Errorf("unable to parse timestamp: %s", s)
+}
+
+// MarshalJSON implements json.Marshaler
+func (ft FlexibleTime) MarshalJSON() ([]byte, error) {
+	return json.Marshal(ft.Time.Format(time.RFC3339))
+}
 
 // EventType represents the type of game event
 type EventType string
@@ -128,10 +166,10 @@ type PlayerLoadout struct {
 
 // BaseEvent contains fields common to all events
 type BaseEvent struct {
-	Timestamp time.Time `json:"timestamp"`
-	Gamemode  string    `json:"gamemode"`
-	ServerIP  string    `json:"server_ip"`
-	EventType EventType `json:"event_type"`
+	Timestamp FlexibleTime `json:"timestamp"`
+	Gamemode  string       `json:"gamemode"`
+	ServerIP  string       `json:"server_ip"`
+	EventType EventType    `json:"event_type"`
 }
 
 // KillEvent represents a player kill

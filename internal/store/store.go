@@ -791,5 +791,6 @@ func intPtr(i int) sql.NullInt32 {
 	if i == 0 {
 		return sql.NullInt32{Valid: false}
 	}
-	return sql.NullInt32{Int32: int32(i), Valid: true}
+	// Safe conversion: deflect/timing values are small
+	return sql.NullInt32{Int32: int32(i), Valid: true} // #nosec G115
 }

@@ -58,7 +58,7 @@ func (p *Processor) Start(ctx context.Context) error {
 		}
 
 		// Start handler for this topic
-		go p.handleMessages(ctx, messages, eventType)
+		go p.handleMessages(ctx, messages)
 	}
 
 	p.logger.Info("Event processor started", watermill.LogFields{
@@ -71,7 +71,7 @@ func (p *Processor) Start(ctx context.Context) error {
 }
 
 // handleMessages processes messages for a specific event type
-func (p *Processor) handleMessages(ctx context.Context, messages <-chan *message.Message, eventType string) {
+func (p *Processor) handleMessages(ctx context.Context, messages <-chan *message.Message) {
 	for {
 		select {
 		case <-ctx.Done():
@@ -81,9 +81,8 @@ func (p *Processor) handleMessages(ctx context.Context, messages <-chan *message
 				return
 			}
 
-			if err := p.processMessage(ctx, msg, eventType); err != nil {
+			if err := p.processMessage(ctx, msg); err != nil {
 				p.logger.Error("Failed to process message", err, watermill.LogFields{
-					"event_type": eventType,
 					"message_id": msg.UUID,
 				})
 				msg.Nack()
@@ -95,7 +94,7 @@ func (p *Processor) handleMessages(ctx context.Context, messages <-chan *message
 }
 
 // processMessage processes a single message
-func (p *Processor) processMessage(ctx context.Context, msg *message.Message, eventType string) error {
+func (p *Processor) processMessage(ctx context.Context, msg *message.Message) error {
 	// Parse the event
 	event, err := parser.ParseLine(string(msg.Payload))
 	if err != nil {
@@ -140,7 +139,7 @@ func (p *Processor) storeRawEvent(ctx context.Context, event *events.Event, payl
 	return p.store.InsertRawEvent(
 		ctx,
 		string(event.Type),
-		baseEvent.Timestamp,
+		baseEvent.Timestamp.Time,
 		baseEvent.ServerIP,
 		baseEvent.Gamemode,
 		json.RawMessage(payload),
@@ -191,8 +190,18 @@ func (p *Processor) processKillEvent(ctx context.Context, kill *events.KillEvent
 	}
 
 	// Track players in match
-	p.store.GetOrCreateMatchPlayer(ctx, match.ID, killer.ID, kill.Killer.Team)
-	p.store.GetOrCreateMatchPlayer(ctx, match.ID, victim.ID, kill.Victim.Team)
+	if err := p.store.GetOrCreateMatchPlayer(ctx, match.ID, killer.ID, kill.Killer.Team); err != nil {
+		p.logger.Error("Failed to track killer in match", err, watermill.LogFields{
+			"match_id":  match.ID,
+			"player_id": killer.ID,
+		})
+	}
+	if err := p.store.GetOrCreateMatchPlayer(ctx, match.ID, victim.ID, kill.Victim.Team); err != nil {
+		p.logger.Error("Failed to track victim in match", err, watermill.LogFields{
+			"match_id":  match.ID,
+			"player_id": victim.ID,
+		})
+	}
 
 	// Insert kill
 	return p.store.InsertKill(ctx, kill, eventID, match.ID)

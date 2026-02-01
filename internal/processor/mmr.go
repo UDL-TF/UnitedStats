@@ -45,53 +45,49 @@ func (p *Processor) processMatchEndEvent(ctx context.Context, matchEnd *events.M
 	winnerChanges, loserChanges := calc.CalculateTeamMatch(winnerMMRs, loserMMRs)
 
 	// Update winner MMRs
-	for i, playerID := range winnerIDs {
-		oldMMR := winnerMMRs[i]
-		newMMR := oldMMR + winnerChanges[i]
-
-		// Update player MMR
-		if err := p.store.UpdatePlayerMMR(ctx, playerID, newMMR); err != nil {
-			p.logger.Error("Failed to update winner MMR", err, nil)
-			continue
-		}
-
-		// Update match_player MMR tracking
-		if err := p.store.UpdateMatchPlayerMMR(ctx, match.ID, playerID, oldMMR, newMMR); err != nil {
-			p.logger.Error("Failed to update match player MMR", err, nil)
-		}
-
-		p.logger.Debug("Winner MMR updated", map[string]interface{}{
-			"player_id": playerID,
-			"old_mmr":   oldMMR,
-			"new_mmr":   newMMR,
-			"change":    winnerChanges[i],
-		})
+	if err := p.updateTeamMMR(ctx, match.ID, winnerIDs, winnerMMRs, winnerChanges, "winner"); err != nil {
+		return err
 	}
 
 	// Update loser MMRs
-	for i, playerID := range loserIDs {
-		oldMMR := loserMMRs[i]
-		newMMR := oldMMR + loserChanges[i]
-
-		// Update player MMR
-		if err := p.store.UpdatePlayerMMR(ctx, playerID, newMMR); err != nil {
-			p.logger.Error("Failed to update loser MMR", err, nil)
-			continue
-		}
-
-		// Update match_player MMR tracking
-		if err := p.store.UpdateMatchPlayerMMR(ctx, match.ID, playerID, oldMMR, newMMR); err != nil {
-			p.logger.Error("Failed to update match player MMR", err, nil)
-		}
-
-		p.logger.Debug("Loser MMR updated", map[string]interface{}{
-			"player_id": playerID,
-			"old_mmr":   oldMMR,
-			"new_mmr":   newMMR,
-			"change":    loserChanges[i],
-		})
+	if err := p.updateTeamMMR(ctx, match.ID, loserIDs, loserMMRs, loserChanges, "loser"); err != nil {
+		return err
 	}
 
 	// End the match
 	return p.store.EndMatch(ctx, match.ID, winnerTeam, 0, 0)
+}
+
+// updateTeamMMR updates MMR for all players on a team
+func (p *Processor) updateTeamMMR(ctx context.Context, matchID int64, playerIDs []int64, oldMMRs, changes []int, team string) error {
+	for i, playerID := range playerIDs {
+		oldMMR := oldMMRs[i]
+		newMMR := oldMMR + changes[i]
+
+		// Update player MMR
+		if err := p.store.UpdatePlayerMMR(ctx, playerID, newMMR); err != nil {
+			p.logger.Error("Failed to update player MMR", err, watermill.LogFields{
+				"team":      team,
+				"player_id": playerID,
+			})
+			continue
+		}
+
+		// Update match_player MMR tracking
+		if err := p.store.UpdateMatchPlayerMMR(ctx, matchID, playerID, oldMMR, newMMR); err != nil {
+			p.logger.Error("Failed to update match player MMR", err, watermill.LogFields{
+				"team":      team,
+				"player_id": playerID,
+			})
+		}
+
+		p.logger.Debug("Team MMR updated", watermill.LogFields{
+			"team":      team,
+			"player_id": playerID,
+			"old_mmr":   oldMMR,
+			"new_mmr":   newMMR,
+			"change":    changes[i],
+		})
+	}
+	return nil
 }
