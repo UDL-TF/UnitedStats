@@ -1,120 +1,31 @@
-# SuperLogs Test Fixtures - JSON Format
-# 
-# These are sample JSON log lines that the SourceMod plugins will generate.
-# Each line is a complete JSON object sent via UDP.
-
-# ============================================================================
-# KILL Events
-# ============================================================================
-
-# Standard kill
 {"timestamp":"2024-02-01T12:00:00","gamemode":"default","server_ip":"192.168.1.100","event_type":"kill","killer":{"steam_id":"76561198012345678","name":"Player1","team":2},"victim":{"steam_id":"76561198087654321","name":"Player2","team":3},"weapon":{"name":"scattergun"},"crit":false,"airborne":false,"killer_pos":{"x":100.5,"y":200.3,"z":50.0},"victim_pos":{"x":150.2,"y":210.8,"z":52.1}}
-
-# Critical hit
 {"timestamp":"2024-02-01T12:00:01","gamemode":"default","server_ip":"192.168.1.100","event_type":"kill","killer":{"steam_id":"76561198012345678","name":"Player1","team":2},"victim":{"steam_id":"76561198087654321","name":"Player2","team":3},"weapon":{"name":"rocket_launcher"},"crit":true,"airborne":false,"killer_pos":{"x":100.5,"y":200.3,"z":50.0},"victim_pos":{"x":150.2,"y":210.8,"z":52.1}}
-
-# Airshot (airborne victim)
 {"timestamp":"2024-02-01T12:00:02","gamemode":"default","server_ip":"192.168.1.100","event_type":"kill","killer":{"steam_id":"76561198012345678","name":"SniperPro","team":2},"victim":{"steam_id":"76561198087654321","name":"ScoutMain","team":3},"weapon":{"name":"tf_projectile_pipe_remote"},"crit":false,"airborne":true,"killer_pos":{"x":500.0,"y":300.0,"z":100.0},"victim_pos":{"x":450.0,"y":250.0,"z":200.5}}
-
-# Critical airshot
 {"timestamp":"2024-02-01T12:00:03","gamemode":"default","server_ip":"192.168.1.100","event_type":"kill","killer":{"steam_id":"76561198012345678","name":"DemoGod","team":2},"victim":{"steam_id":"76561198087654321","name":"JumpingSoldier","team":3},"weapon":{"name":"sticky_launcher"},"crit":true,"airborne":true,"killer_pos":{"x":300.0,"y":400.0,"z":80.0},"victim_pos":{"x":320.0,"y":380.0,"z":250.0}}
-
-# ============================================================================
-# Special Character Tests (Names with special chars)
-# ============================================================================
-
-# Name with pipe character
 {"timestamp":"2024-02-01T12:00:04","gamemode":"default","server_ip":"192.168.1.100","event_type":"kill","killer":{"steam_id":"76561198012345678","name":"Player|One","team":2},"victim":{"steam_id":"76561198087654321","name":"NormalName","team":3},"weapon":{"name":"minigun"},"crit":false,"airborne":false,"killer_pos":{"x":100.0,"y":200.0,"z":50.0},"victim_pos":{"x":150.0,"y":210.0,"z":52.0}}
-
-# Name with special characters
 {"timestamp":"2024-02-01T12:00:05","gamemode":"default","server_ip":"192.168.1.100","event_type":"kill","killer":{"steam_id":"76561198012345678","name":"[TF2]|Bot|2000","team":2},"victim":{"steam_id":"76561198087654321","name":"l33t|player","team":3},"weapon":{"name":"shotgun_primary"},"crit":false,"airborne":false,"killer_pos":{"x":100.0,"y":200.0,"z":50.0},"victim_pos":{"x":150.0,"y":210.0,"z":52.0}}
-
-# Name with quotes and backslashes
 {"timestamp":"2024-02-01T12:00:06","gamemode":"default","server_ip":"192.168.1.100","event_type":"kill","killer":{"steam_id":"76561198012345678","name":"Player\\\"Quoted\\\"","team":2},"victim":{"steam_id":"76561198087654321","name":"Victim","team":3},"weapon":{"name":"smg"},"crit":false,"airborne":false,"killer_pos":{"x":100.0,"y":200.0,"z":50.0},"victim_pos":{"x":150.0,"y":210.0,"z":52.0}}
-
-# Unicode/emoji in name
 {"timestamp":"2024-02-01T12:00:07","gamemode":"default","server_ip":"192.168.1.100","event_type":"kill","killer":{"steam_id":"76561198012345678","name":"Player😀","team":2},"victim":{"steam_id":"76561198087654321","name":"VictimTest","team":3},"weapon":{"name":"knife"},"crit":false,"airborne":false,"killer_pos":{"x":100.0,"y":200.0,"z":50.0},"victim_pos":{"x":150.0,"y":210.0,"z":52.0}}
-
-# ============================================================================
-# Different Weapon Types
-# ============================================================================
-
-# Melee (backstab)
 {"timestamp":"2024-02-01T12:01:00","gamemode":"default","server_ip":"192.168.1.100","event_type":"kill","killer":{"steam_id":"76561198012345678","name":"SpyMain","team":2},"victim":{"steam_id":"76561198087654321","name":"BackstabVictim","team":3},"weapon":{"name":"knife","item_def_index":194},"crit":false,"airborne":false,"killer_pos":{"x":100.0,"y":200.0,"z":50.0},"victim_pos":{"x":101.0,"y":201.0,"z":50.0}}
-
-# Projectile
 {"timestamp":"2024-02-01T12:01:01","gamemode":"default","server_ip":"192.168.1.100","event_type":"kill","killer":{"steam_id":"76561198012345678","name":"SoldierMain","team":2},"victim":{"steam_id":"76561198087654321","name":"ScoutTarget","team":3},"weapon":{"name":"tf_projectile_rocket"},"crit":false,"airborne":true,"killer_pos":{"x":500.0,"y":300.0,"z":100.0},"victim_pos":{"x":450.0,"y":250.0,"z":180.0}}
-
-# Headshot (sniper rifle)
 {"timestamp":"2024-02-01T12:01:02","gamemode":"default","server_ip":"192.168.1.100","event_type":"kill","killer":{"steam_id":"76561198012345678","name":"SniperPro","team":2},"victim":{"steam_id":"76561198087654321","name":"HeavyTarget","team":3},"weapon":{"name":"sniperrifle"},"crit":true,"airborne":false,"killer_pos":{"x":1000.0,"y":500.0,"z":200.0},"victim_pos":{"x":500.0,"y":300.0,"z":100.0}}
-
-# Sentry gun
 {"timestamp":"2024-02-01T12:01:03","gamemode":"default","server_ip":"192.168.1.100","event_type":"kill","killer":{"steam_id":"76561198012345678","name":"EngineerMain","team":2},"victim":{"steam_id":"76561198087654321","name":"ScoutRusher","team":3},"weapon":{"name":"obj_sentrygun"},"crit":false,"airborne":false,"killer_pos":{"x":300.0,"y":400.0,"z":50.0},"victim_pos":{"x":350.0,"y":450.0,"z":52.0}}
-
-# Taunt kill
 {"timestamp":"2024-02-01T12:01:04","gamemode":"default","server_ip":"192.168.1.100","event_type":"kill","killer":{"steam_id":"76561198012345678","name":"TauntMaster","team":2},"victim":{"steam_id":"76561198087654321","name":"UnluckyVictim","team":3},"weapon":{"name":"taunt_pyro"},"crit":false,"airborne":false,"killer_pos":{"x":100.0,"y":200.0,"z":50.0},"victim_pos":{"x":102.0,"y":202.0,"z":50.0}}
-
-# ============================================================================
-# DEFLECT Events (Dodgeball)
-# ============================================================================
-
-# Perfect deflect
 {"timestamp":"2024-02-01T12:05:00","gamemode":"dodgeball","server_ip":"192.168.1.100","event_type":"deflect","player":{"steam_id":"76561198012345678","name":"DodgeballPro","team":2},"rocket_speed":1500.5,"deflect_angle":1.0000,"timing_ms":50,"distance":100.0,"player_pos":{"x":500.0,"y":500.0,"z":100.0}}
-
-# Good deflect
 {"timestamp":"2024-02-01T12:05:01","gamemode":"dodgeball","server_ip":"192.168.1.100","event_type":"deflect","player":{"steam_id":"76561198012345678","name":"GoodPlayer","team":2},"rocket_speed":1200.0,"deflect_angle":0.9500,"timing_ms":120,"distance":150.25,"player_pos":{"x":500.0,"y":500.0,"z":100.0}}
-
-# Mediocre deflect
 {"timestamp":"2024-02-01T12:05:02","gamemode":"dodgeball","server_ip":"192.168.1.100","event_type":"deflect","player":{"steam_id":"76561198012345678","name":"OkayPlayer","team":2},"rocket_speed":800.0,"deflect_angle":0.7500,"timing_ms":200,"distance":200.0,"player_pos":{"x":500.0,"y":500.0,"z":100.0}}
-
-# Close-range deflect
 {"timestamp":"2024-02-01T12:05:03","gamemode":"dodgeball","server_ip":"192.168.1.100","event_type":"deflect","player":{"steam_id":"76561198012345678","name":"CloseDeflector","team":2},"rocket_speed":1800.0,"deflect_angle":0.9800,"timing_ms":30,"distance":50.0,"player_pos":{"x":500.0,"y":500.0,"z":100.0}}
-
-# Far-range deflect
 {"timestamp":"2024-02-01T12:05:04","gamemode":"dodgeball","server_ip":"192.168.1.100","event_type":"deflect","player":{"steam_id":"76561198012345678","name":"FarDeflector","team":2},"rocket_speed":900.0,"deflect_angle":0.8500,"timing_ms":180,"distance":500.0,"player_pos":{"x":500.0,"y":500.0,"z":100.0}}
-
-# ============================================================================
-# MATCH Events
-# ============================================================================
-
-# Match start
 {"timestamp":"2024-02-01T12:00:00","gamemode":"default","server_ip":"192.168.1.100","event_type":"match_start","map":"cp_process_final"}
-
-# Match start with different map
 {"timestamp":"2024-02-01T12:10:00","gamemode":"default","server_ip":"192.168.1.100","event_type":"match_start","map":"koth_product_rcX"}
-
-# Match end - RED wins
 {"timestamp":"2024-02-01T12:10:00","gamemode":"default","server_ip":"192.168.1.100","event_type":"match_end","winner_team":2,"duration":600}
-
-# Match end - BLU wins
 {"timestamp":"2024-02-01T12:20:00","gamemode":"default","server_ip":"192.168.1.100","event_type":"match_end","winner_team":3,"duration":450}
-
-# Match end - TIE
 {"timestamp":"2024-02-01T12:30:00","gamemode":"default","server_ip":"192.168.1.100","event_type":"match_end","winner_team":0,"duration":300}
-
-# Match end - very short match
 {"timestamp":"2024-02-01T12:40:00","gamemode":"default","server_ip":"192.168.1.100","event_type":"match_end","winner_team":2,"duration":10}
-
-# Match end - very long match
 {"timestamp":"2024-02-01T13:00:00","gamemode":"default","server_ip":"192.168.1.100","event_type":"match_end","winner_team":3,"duration":3600}
-
-# ============================================================================
-# Gamemode Variations
-# ============================================================================
-
-# Dodgeball gamemode kill
 {"timestamp":"2024-02-01T14:00:00","gamemode":"dodgeball","server_ip":"192.168.1.100","event_type":"kill","killer":{"steam_id":"76561198012345678","name":"DodgeballPlayer","team":2},"victim":{"steam_id":"76561198087654321","name":"RocketVictim","team":3},"weapon":{"name":"tf_projectile_rocket"},"crit":false,"airborne":true,"killer_pos":{"x":500.0,"y":500.0,"z":100.0},"victim_pos":{"x":450.0,"y":450.0,"z":100.0}}
-
-# MGE gamemode
 {"timestamp":"2024-02-01T14:10:00","gamemode":"mge","server_ip":"192.168.1.100","event_type":"kill","killer":{"steam_id":"76561198012345678","name":"MGEPlayer1","team":2},"victim":{"steam_id":"76561198087654321","name":"MGEPlayer2","team":3},"weapon":{"name":"rocket_launcher"},"crit":false,"airborne":false,"killer_pos":{"x":0.0,"y":0.0,"z":100.0},"victim_pos":{"x":50.0,"y":50.0,"z":100.0}}
-
-# Ultiduo gamemode
 {"timestamp":"2024-02-01T14:20:00","gamemode":"ultiduo","server_ip":"192.168.1.100","event_type":"kill","killer":{"steam_id":"76561198012345678","name":"UltiduoSoldier","team":2},"victim":{"steam_id":"76561198087654321","name":"UltiduoMedic","team":3},"weapon":{"name":"scattergun"},"crit":false,"airborne":false,"killer_pos":{"x":0.0,"y":0.0,"z":100.0},"victim_pos":{"x":50.0,"y":50.0,"z":100.0}}
-
-# ============================================================================
-# Real-World Example (Competitive 6v6)
-# ============================================================================
-
 {"timestamp":"2024-02-01T18:00:00","gamemode":"default","server_ip":"192.168.1.100","event_type":"match_start","map":"cp_process_final"}
 {"timestamp":"2024-02-01T18:00:10","gamemode":"default","server_ip":"192.168.1.100","event_type":"kill","killer":{"steam_id":"76561198012345678","name":"Scout_Main","team":2},"victim":{"steam_id":"76561198087654321","name":"Roamer_Soldier","team":3},"weapon":{"name":"scattergun"},"crit":false,"airborne":false,"killer_pos":{"x":1500.0,"y":500.0,"z":100.0},"victim_pos":{"x":1450.0,"y":480.0,"z":105.0}}
 {"timestamp":"2024-02-01T18:00:15","gamemode":"default","server_ip":"192.168.1.100","event_type":"kill","killer":{"steam_id":"76561198011111111","name":"Demo_Main","team":2},"victim":{"steam_id":"76561198022222222","name":"Pocket_Soldier","team":3},"weapon":{"name":"sticky_launcher"},"crit":false,"airborne":false,"killer_pos":{"x":1000.0,"y":300.0,"z":100.0},"victim_pos":{"x":1050.0,"y":320.0,"z":100.0}}
