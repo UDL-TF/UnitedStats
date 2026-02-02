@@ -1,0 +1,27 @@
+# Code owners for UnitedStats
+# These owners will be requested for review when someone opens a pull request.
+
+# Default owner for everything
+* @UDL-TF/maintainers
+
+# GitHub workflows and CI/CD
+/.github/ @UDL-TF/maintainers
+
+# Go code
+/cmd/ @UDL-TF/backend
+/internal/ @UDL-TF/backend
+/pkg/ @UDL-TF/backend
+
+# SourceMod plugins
+/sourcemod/ @UDL-TF/sourcemod
+
+# Documentation
+*.md @UDL-TF/maintainers
+
+# Database
+schema.sql @UDL-TF/backend
+/migrations/ @UDL-TF/backend
+
+# Docker
+Dockerfile.* @UDL-TF/backend
+docker-compose.yml @UDL-TF/backend
