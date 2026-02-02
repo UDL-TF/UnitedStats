@@ -70,7 +70,7 @@ jobs:
           RABBITMQ_URL: amqp://test:test@localhost:5672/
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v5
         with:
           files: ./coverage.out
           flags: unittests

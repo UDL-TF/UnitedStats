@@ -78,7 +78,7 @@ jobs:
         run: go test -v -race -coverprofile=coverage-processor.out ./internal/processor/...
 
       - name: Upload coverage
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v5
         with:
           files: ./coverage-parser.out,./coverage-mmr.out,./coverage-processor.out
           flags: processor
