@@ -83,7 +83,7 @@ jobs:
           DB_NAME: test
 
       - name: Upload coverage
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v5
         with:
           files: ./coverage-api.out,./coverage-store.out
           flags: api
