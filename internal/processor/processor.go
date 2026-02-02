@@ -139,7 +139,7 @@ func (p *Processor) storeRawEvent(ctx context.Context, event *events.Event, payl
 	return p.store.InsertRawEvent(
 		ctx,
 		string(event.Type),
-		baseEvent.Timestamp.Time,
+		baseEvent.Timestamp,
 		baseEvent.ServerIP,
 		baseEvent.Gamemode,
 		json.RawMessage(payload),

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/ThreeDotsLabs/watermill"
 	"github.com/UDL-TF/UnitedStats/internal/mmr"
 	"github.com/UDL-TF/UnitedStats/pkg/events"
 )
