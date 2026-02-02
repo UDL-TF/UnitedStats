@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"github.com/UDL-TF/UnitedStats/internal/store"
+	"github.com/gin-gonic/gin"
 )
 
 // API provides the REST API server
@@ -51,33 +51,26 @@ func (a *API) setupRoutes() {
 
 	// API v1
 	v1 := a.router.Group("/api/v1")
-	{
-		// Players
-		players := v1.Group("/players")
-		{
-			players.GET("/:steam_id", a.getPlayer)
-			players.GET("/:steam_id/stats", a.getPlayerStats)
-			players.GET("/:steam_id/matches", a.getPlayerMatches)
-		}
 
-		// Leaderboard
-		v1.GET("/leaderboard", a.getLeaderboard)
+	// Players
+	players := v1.Group("/players")
+	players.GET("/:steam_id", a.getPlayer)
+	players.GET("/:steam_id/stats", a.getPlayerStats)
+	players.GET("/:steam_id/matches", a.getPlayerMatches)
 
-		// Matches
-		matches := v1.Group("/matches")
-		{
-			matches.GET("", a.getMatches)
-			matches.GET("/:id", a.getMatch)
-			matches.GET("/:id/events", a.getMatchEvents)
-		}
+	// Leaderboard
+	v1.GET("/leaderboard", a.getLeaderboard)
 
-		// Stats
-		stats := v1.Group("/stats")
-		{
-			stats.GET("/overview", a.getStatsOverview)
-			stats.GET("/weapons", a.getWeaponStats)
-		}
-	}
+	// Matches
+	matches := v1.Group("/matches")
+	matches.GET("", a.getMatches)
+	matches.GET("/:id", a.getMatch)
+	matches.GET("/:id/events", a.getMatchEvents)
+
+	// Stats
+	stats := v1.Group("/stats")
+	stats.GET("/overview", a.getStatsOverview)
+	stats.GET("/weapons", a.getWeaponStats)
 }
 
 // Start starts the API server
@@ -97,7 +90,7 @@ func (a *API) Shutdown(ctx context.Context) error {
 // healthCheck returns the health status
 func (a *API) healthCheck(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
-		"status": "ok",
+		"status":    "ok",
 		"timestamp": time.Now().Unix(),
 	})
 }
@@ -107,13 +100,13 @@ func (a *API) getLeaderboard(c *gin.Context) {
 	// Parse query parameters
 	limit := 100
 	offset := 0
-	
+
 	if limitStr := c.DefaultQuery("limit", "100"); limitStr != "" {
 		if val, err := strconv.Atoi(limitStr); err == nil {
 			limit = val
 		}
 	}
-	
+
 	if offsetStr := c.DefaultQuery("offset", "0"); offsetStr != "" {
 		if val, err := strconv.Atoi(offsetStr); err == nil {
 			offset = val
@@ -196,13 +189,13 @@ func (a *API) getPlayerMatches(c *gin.Context) {
 	steamID := c.Param("steam_id")
 	limit := 20
 	offset := 0
-	
+
 	if limitStr := c.DefaultQuery("limit", "20"); limitStr != "" {
 		if val, err := strconv.Atoi(limitStr); err == nil {
 			limit = val
 		}
 	}
-	
+
 	if offsetStr := c.DefaultQuery("offset", "0"); offsetStr != "" {
 		if val, err := strconv.Atoi(offsetStr); err == nil {
 			offset = val
@@ -239,13 +232,13 @@ func (a *API) getPlayerMatches(c *gin.Context) {
 func (a *API) getMatches(c *gin.Context) {
 	limit := 50
 	offset := 0
-	
+
 	if limitStr := c.DefaultQuery("limit", "50"); limitStr != "" {
 		if val, err := strconv.Atoi(limitStr); err == nil {
 			limit = val
 		}
 	}
-	
+
 	if offsetStr := c.DefaultQuery("offset", "0"); offsetStr != "" {
 		if val, err := strconv.Atoi(offsetStr); err == nil {
 			offset = val
@@ -316,13 +309,13 @@ func (a *API) getStatsOverview(c *gin.Context) {
 // getWeaponStats returns weapon statistics
 func (a *API) getWeaponStats(c *gin.Context) {
 	limit := 50
-	
+
 	if limitStr := c.DefaultQuery("limit", "50"); limitStr != "" {
 		if val, err := strconv.Atoi(limitStr); err == nil {
 			limit = val
 		}
 	}
-	
+
 	if limit > 200 {
 		limit = 200
 	}

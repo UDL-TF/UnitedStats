@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"time"
 
-	_ "github.com/lib/pq"
 	"github.com/UDL-TF/UnitedStats/pkg/events"
+	_ "github.com/lib/pq"
 )
 
 // Store handles all database operations
@@ -315,9 +315,9 @@ func (s *Store) InsertKill(ctx context.Context, kill *events.KillEvent, eventID,
 
 	var assisterID sql.NullInt64
 	if kill.Assister != nil {
-		assister, err := s.GetOrCreatePlayer(ctx, kill.Assister.SteamID, kill.Assister.Name)
-		if err != nil {
-			return fmt.Errorf("failed to get/create assister: %w", err)
+		assister, assisterErr := s.GetOrCreatePlayer(ctx, kill.Assister.SteamID, kill.Assister.Name)
+		if assisterErr != nil {
+			return fmt.Errorf("failed to get/create assister: %w", assisterErr)
 		}
 		assisterID = sql.NullInt64{Int64: assister.ID, Valid: true}
 	}
@@ -380,9 +380,9 @@ func (s *Store) InsertDeflect(ctx context.Context, deflect *events.DeflectEvent,
 
 	var ownerID sql.NullInt64
 	if deflect.Owner != nil {
-		owner, err := s.GetOrCreatePlayer(ctx, deflect.Owner.SteamID, deflect.Owner.Name)
-		if err != nil {
-			return err
+		owner, ownerErr := s.GetOrCreatePlayer(ctx, deflect.Owner.SteamID, deflect.Owner.Name)
+		if ownerErr != nil {
+			return ownerErr
 		}
 		ownerID = sql.NullInt64{Int64: owner.ID, Valid: true}
 	}
@@ -471,23 +471,23 @@ type MatchWithPlayers struct {
 
 // MatchPlayerStats represents a player's stats in a match
 type MatchPlayerStats struct {
-	PlayerID      int64
-	SteamID       string
-	Name          string
-	Team          int
-	PrimaryClass  string
-	Kills         int
-	Deaths        int
-	Assists       int
-	DamageDealt   int
-	HealingDone   int
-	Airshots      int
-	Headshots     int
-	Backstabs     int
-	Deflects      int
-	MMRBefore     sql.NullInt32
-	MMRAfter      sql.NullInt32
-	MMRChange     sql.NullInt32
+	PlayerID     int64
+	SteamID      string
+	Name         string
+	Team         int
+	PrimaryClass string
+	Kills        int
+	Deaths       int
+	Assists      int
+	DamageDealt  int
+	HealingDone  int
+	Airshots     int
+	Headshots    int
+	Backstabs    int
+	Deflects     int
+	MMRBefore    sql.NullInt32
+	MMRAfter     sql.NullInt32
+	MMRChange    sql.NullInt32
 }
 
 // GetMatchByID gets a match by ID with all player stats
@@ -694,11 +694,11 @@ func (s *Store) GetMatchTeamPlayers(ctx context.Context, matchID int64, team int
 
 // WeaponStats represents aggregate weapon statistics
 type WeaponStats struct {
-	Weapon     string
-	Kills      int
-	Headshots  int
-	Airshots   int
-	AvgKills   float64
+	Weapon      string
+	Kills       int
+	Headshots   int
+	Airshots    int
+	AvgKills    float64
 	UniqueUsers int
 }
 
@@ -736,11 +736,11 @@ func (s *Store) GetWeaponStats(ctx context.Context, limit int) ([]*WeaponStats, 
 
 // StatsOverview represents global statistics
 type StatsOverview struct {
-	TotalPlayers int
-	TotalMatches int
-	TotalKills   int
+	TotalPlayers  int
+	TotalMatches  int
+	TotalKills    int
 	TotalAirshots int
-	AvgMMR       float64
+	AvgMMR        float64
 }
 
 // GetStatsOverview gets global statistics
@@ -754,7 +754,7 @@ func (s *Store) GetStatsOverview(ctx context.Context) (*StatsOverview, error) {
 			(SELECT COUNT(*) FROM airshots) as total_airshots,
 			(SELECT AVG(mmr) FROM players WHERE last_seen > NOW() - INTERVAL '30 days') as avg_mmr
 	`).Scan(&stats.TotalPlayers, &stats.TotalMatches, &stats.TotalKills, &stats.TotalAirshots, &stats.AvgMMR)
-	
+
 	return &stats, err
 }
 

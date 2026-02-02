@@ -34,7 +34,11 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to create store: %v", err)
 	}
-	defer st.Close()
+	defer func() {
+		if err := st.Close(); err != nil {
+			log.Printf("Error closing store: %v", err)
+		}
+	}()
 
 	log.Println("Database connection established")
 
@@ -52,7 +56,7 @@ func main() {
 	go func() {
 		log.Printf("Starting API server on port %d...\n", apiPort)
 		if err := server.Start(); err != nil {
-			log.Fatalf("API server error: %v", err)
+			log.Printf("API server error: %v", err)
 		}
 	}()
 

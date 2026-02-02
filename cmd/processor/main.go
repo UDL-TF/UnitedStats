@@ -38,7 +38,11 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to create store: %v", err)
 	}
-	defer st.Close()
+	defer func() {
+		if err := st.Close(); err != nil {
+			log.Printf("Error closing store: %v", err)
+		}
+	}()
 
 	log.Println("Database connection established")
 
@@ -50,7 +54,11 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to create subscriber: %v", err)
 	}
-	defer subscriber.Close()
+	defer func() {
+		if err := subscriber.Close(); err != nil {
+			log.Printf("Error closing subscriber: %v", err)
+		}
+	}()
 
 	// Create processor
 	proc := processor.New(processor.Config{
@@ -75,7 +83,7 @@ func main() {
 
 	log.Println("Starting event processor...")
 	if err := proc.Start(ctx); err != nil {
-		log.Fatalf("Processor error: %v", err)
+		log.Printf("Processor error: %v", err)
 	}
 
 	log.Println("Processor stopped")

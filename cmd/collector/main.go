@@ -29,7 +29,11 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to create publisher: %v", err)
 	}
-	defer publisher.Close()
+	defer func() {
+		if err := publisher.Close(); err != nil {
+			log.Printf("Error closing publisher: %v", err)
+		}
+	}()
 
 	// Create collector
 	c := collector.New(collector.Config{
@@ -54,7 +58,7 @@ func main() {
 
 	log.Printf("Starting collector on UDP port %d...\n", udpPort)
 	if err := c.Start(ctx); err != nil {
-		log.Fatalf("Collector error: %v", err)
+		log.Printf("Collector error: %v", err)
 	}
 
 	log.Println("Collector stopped")
