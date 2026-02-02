@@ -11,7 +11,7 @@ import (
 
 // TestParseKillEvent tests basic KILL event parsing
 func TestParseKillEvent(t *testing.T) {
-	line := `{"timestamp":"2024-02-01T12:00:00","gamemode":"default","server_ip":"192.168.1.100","event_type":"kill","killer":{"steam_id":"76561198012345678","name":"Player1","team":2},"victim":{"steam_id":"76561198087654321","name":"Player2","team":3},"weapon":{"name":"scattergun"},"crit":false,"airborne":false}`
+	line := `{"timestamp":"2024-02-01T12:00:00Z","gamemode":"default","server_ip":"192.168.1.100","event_type":"kill","killer":{"steam_id":"76561198012345678","name":"Player1","team":2},"victim":{"steam_id":"76561198087654321","name":"Player2","team":3},"weapon":{"name":"scattergun"},"crit":false,"airborne":false}`
 
 	event, err := ParseLine(line)
 	if err != nil {
@@ -79,7 +79,7 @@ func TestParseKillEvent(t *testing.T) {
 
 // TestParseCriticalKill tests critical hit kill
 func TestParseCriticalKill(t *testing.T) {
-	line := `{"timestamp":"2024-02-01T12:00:01","gamemode":"default","server_ip":"192.168.1.100","event_type":"kill","killer":{"steam_id":"76561198012345678","name":"Player1","team":2},"victim":{"steam_id":"76561198087654321","name":"Player2","team":3},"weapon":{"name":"rocket_launcher"},"crit":true,"airborne":false}`
+	line := `{"timestamp":"2024-02-01T12:00:01Z","gamemode":"default","server_ip":"192.168.1.100","event_type":"kill","killer":{"steam_id":"76561198012345678","name":"Player1","team":2},"victim":{"steam_id":"76561198087654321","name":"Player2","team":3},"weapon":{"name":"rocket_launcher"},"crit":true,"airborne":false}`
 
 	event, err := ParseLine(line)
 	if err != nil {
@@ -93,7 +93,7 @@ func TestParseCriticalKill(t *testing.T) {
 
 // TestParseAirshot tests airshot kill
 func TestParseAirshot(t *testing.T) {
-	line := `{"timestamp":"2024-02-01T12:00:02","gamemode":"default","server_ip":"192.168.1.100","event_type":"kill","killer":{"steam_id":"76561198012345678","name":"SniperPro","team":2},"victim":{"steam_id":"76561198087654321","name":"ScoutMain","team":3},"weapon":{"name":"tf_projectile_pipe_remote"},"crit":false,"airborne":true}`
+	line := `{"timestamp":"2024-02-01T12:00:02Z","gamemode":"default","server_ip":"192.168.1.100","event_type":"kill","killer":{"steam_id":"76561198012345678","name":"SniperPro","team":2},"victim":{"steam_id":"76561198087654321","name":"ScoutMain","team":3},"weapon":{"name":"tf_projectile_pipe_remote"},"crit":false,"airborne":true}`
 
 	event, err := ParseLine(line)
 	if err != nil {
@@ -107,7 +107,7 @@ func TestParseAirshot(t *testing.T) {
 
 // TestParseKillWithPositions tests kill with position data
 func TestParseKillWithPositions(t *testing.T) {
-	line := `{"timestamp":"2024-02-01T12:00:00","gamemode":"default","server_ip":"192.168.1.100","event_type":"kill","killer":{"steam_id":"76561198012345678","name":"Player1","team":2},"victim":{"steam_id":"76561198087654321","name":"Player2","team":3},"weapon":{"name":"scattergun"},"crit":false,"airborne":false,"killer_pos":{"x":100.5,"y":200.3,"z":50.0},"victim_pos":{"x":150.2,"y":210.8,"z":52.1}}`
+	line := `{"timestamp":"2024-02-01T12:00:00Z","gamemode":"default","server_ip":"192.168.1.100","event_type":"kill","killer":{"steam_id":"76561198012345678","name":"Player1","team":2},"victim":{"steam_id":"76561198087654321","name":"Player2","team":3},"weapon":{"name":"scattergun"},"crit":false,"airborne":false,"killer_pos":{"x":100.5,"y":200.3,"z":50.0},"victim_pos":{"x":150.2,"y":210.8,"z":52.1}}`
 
 	event, err := ParseLine(line)
 	if err != nil {
@@ -143,13 +143,13 @@ func TestParseSpecialCharacters(t *testing.T) {
 	}{
 		{
 			name:       "Pipe in name",
-			line:       `{"timestamp":"2024-02-01T12:00:04","gamemode":"default","server_ip":"192.168.1.100","event_type":"kill","killer":{"steam_id":"76561198012345678","name":"Player|One","team":2},"victim":{"steam_id":"76561198087654321","name":"NormalName","team":3},"weapon":{"name":"minigun"},"crit":false,"airborne":false}`,
+			line:       `{"timestamp":"2024-02-01T12:00:04Z","gamemode":"default","server_ip":"192.168.1.100","event_type":"kill","killer":{"steam_id":"76561198012345678","name":"Player|One","team":2},"victim":{"steam_id":"76561198087654321","name":"NormalName","team":3},"weapon":{"name":"minigun"},"crit":false,"airborne":false}`,
 			wantKiller: "Player|One",
 			wantVictim: "NormalName",
 		},
 		{
 			name:       "Multiple special chars",
-			line:       `{"timestamp":"2024-02-01T12:00:05","gamemode":"default","server_ip":"192.168.1.100","event_type":"kill","killer":{"steam_id":"76561198012345678","name":"[TF2]|Bot|2000","team":2},"victim":{"steam_id":"76561198087654321","name":"l33t|player","team":3},"weapon":{"name":"shotgun_primary"},"crit":false,"airborne":false}`,
+			line:       `{"timestamp":"2024-02-01T12:00:05Z","gamemode":"default","server_ip":"192.168.1.100","event_type":"kill","killer":{"steam_id":"76561198012345678","name":"[TF2]|Bot|2000","team":2},"victim":{"steam_id":"76561198087654321","name":"l33t|player","team":3},"weapon":{"name":"shotgun_primary"},"crit":false,"airborne":false}`,
 			wantKiller: "[TF2]|Bot|2000",
 			wantVictim: "l33t|player",
 		},
@@ -175,7 +175,7 @@ func TestParseSpecialCharacters(t *testing.T) {
 
 // TestParseDeflectEvent tests DEFLECT event parsing
 func TestParseDeflectEvent(t *testing.T) {
-	line := `{"timestamp":"2024-02-01T12:05:00","gamemode":"dodgeball","server_ip":"192.168.1.100","event_type":"deflect","player":{"steam_id":"76561198012345678","name":"DodgeballPro","team":2},"rocket_speed":1500.5,"deflect_angle":1.0000,"timing_ms":50,"distance":100.0}`
+	line := `{"timestamp":"2024-02-01T12:05:00Z","gamemode":"dodgeball","server_ip":"192.168.1.100","event_type":"deflect","player":{"steam_id":"76561198012345678","name":"DodgeballPro","team":2},"rocket_speed":1500.5,"deflect_angle":1.0000,"timing_ms":50,"distance":100.0}`
 
 	event, err := ParseLine(line)
 	if err != nil {
@@ -222,7 +222,7 @@ func TestParseDeflectEvent(t *testing.T) {
 
 // TestParseMatchStartEvent tests MATCH_START event parsing
 func TestParseMatchStartEvent(t *testing.T) {
-	line := `{"timestamp":"2024-02-01T12:00:00","gamemode":"default","server_ip":"192.168.1.100","event_type":"match_start","map":"cp_process_final"}`
+	line := `{"timestamp":"2024-02-01T12:00:00Z","gamemode":"default","server_ip":"192.168.1.100","event_type":"match_start","map":"cp_process_final"}`
 
 	event, err := ParseLine(line)
 	if err != nil {
@@ -253,19 +253,19 @@ func TestParseMatchEndEvent(t *testing.T) {
 	}{
 		{
 			name:         "RED wins",
-			line:         `{"timestamp":"2024-02-01T12:10:00","gamemode":"default","server_ip":"192.168.1.100","event_type":"match_end","winner_team":2,"duration":600}`,
+			line:         `{"timestamp":"2024-02-01T12:10:00Z","gamemode":"default","server_ip":"192.168.1.100","event_type":"match_end","winner_team":2,"duration":600}`,
 			wantTeam:     2,
 			wantDuration: 600,
 		},
 		{
 			name:         "BLU wins",
-			line:         `{"timestamp":"2024-02-01T12:20:00","gamemode":"default","server_ip":"192.168.1.100","event_type":"match_end","winner_team":3,"duration":450}`,
+			line:         `{"timestamp":"2024-02-01T12:20:00Z","gamemode":"default","server_ip":"192.168.1.100","event_type":"match_end","winner_team":3,"duration":450}`,
 			wantTeam:     3,
 			wantDuration: 450,
 		},
 		{
 			name:         "TIE",
-			line:         `{"timestamp":"2024-02-01T12:30:00","gamemode":"default","server_ip":"192.168.1.100","event_type":"match_end","winner_team":0,"duration":300}`,
+			line:         `{"timestamp":"2024-02-01T12:30:00Z","gamemode":"default","server_ip":"192.168.1.100","event_type":"match_end","winner_team":0,"duration":300}`,
 			wantTeam:     0,
 			wantDuration: 300,
 		},
@@ -318,7 +318,7 @@ func TestParseInvalidLines(t *testing.T) {
 		},
 		{
 			name:    "Unknown event type",
-			line:    `{"timestamp":"2024-02-01T12:00:00","gamemode":"default","server_ip":"192.168.1.100","event_type":"unknown"}`,
+			line:    `{"timestamp":"2024-02-01T12:00:00Z","gamemode":"default","server_ip":"192.168.1.100","event_type":"unknown"}`,
 			wantErr: false, // Should skip, not error
 		},
 	}
@@ -422,7 +422,7 @@ func TestParseAllFixtures(t *testing.T) {
 
 // BenchmarkParseKillEvent benchmarks KILL event parsing
 func BenchmarkParseKillEvent(b *testing.B) {
-	line := `{"timestamp":"2024-02-01T12:00:00","gamemode":"default","server_ip":"192.168.1.100","event_type":"kill","killer":{"steam_id":"76561198012345678","name":"Player1","team":2},"victim":{"steam_id":"76561198087654321","name":"Player2","team":3},"weapon":{"name":"scattergun"},"crit":false,"airborne":false}`
+	line := `{"timestamp":"2024-02-01T12:00:00Z","gamemode":"default","server_ip":"192.168.1.100","event_type":"kill","killer":{"steam_id":"76561198012345678","name":"Player1","team":2},"victim":{"steam_id":"76561198087654321","name":"Player2","team":3},"weapon":{"name":"scattergun"},"crit":false,"airborne":false}`
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -432,7 +432,7 @@ func BenchmarkParseKillEvent(b *testing.B) {
 
 // BenchmarkParseDeflectEvent benchmarks DEFLECT event parsing
 func BenchmarkParseDeflectEvent(b *testing.B) {
-	line := `{"timestamp":"2024-02-01T12:05:00","gamemode":"dodgeball","server_ip":"192.168.1.100","event_type":"deflect","player":{"steam_id":"76561198012345678","name":"DodgeballPro","team":2},"rocket_speed":1500.5,"deflect_angle":1.0000,"timing_ms":50,"distance":100.0}`
+	line := `{"timestamp":"2024-02-01T12:05:00Z","gamemode":"dodgeball","server_ip":"192.168.1.100","event_type":"deflect","player":{"steam_id":"76561198012345678","name":"DodgeballPro","team":2},"rocket_speed":1500.5,"deflect_angle":1.0000,"timing_ms":50,"distance":100.0}`
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
